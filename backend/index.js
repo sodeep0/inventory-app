@@ -8,7 +8,12 @@ connectDB();
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+//allow cors for https://inventory-app-vert-two.vercel.app/
+app.use(cors({
+  origin: 'https://inventory-app-vert-two.vercel.app',
+  credentials: true,
+}));
+
 app.use(express.json());
 
 app.get('/', (req, res) => {
