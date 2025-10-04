@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 
 //allow cors for https://inventory-app-vert-two.vercel.app/
 app.use(cors({
-  origin: 'https://inventory-app-vert-two.vercel.app',
+  origin: 'https://inventory-app-sudip.vercel.app',
   credentials: true,
 }));
 
