@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import * as jwt from 'jsonwebtoken';
 
 interface User {
   username: string;
@@ -20,7 +19,11 @@ interface AuthContextType {
 // Function to check if token is expired
 const isTokenExpired = (token: string): boolean => {
   try {
-    const decoded = jwt.decode(token) as any;
+    // Simple base64 decode for JWT payload (client-side safe)
+    const payload = token.split('.')[1];
+    if (!payload) return true;
+    
+    const decoded = JSON.parse(atob(payload));
     if (!decoded || !decoded.exp) return true;
     
     const currentTime = Date.now() / 1000;
