@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import {
   Dialog,
@@ -45,13 +45,7 @@ export function RecordReturnDialog({
   const [reason, setReason] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchItems();
-    }
-  }, [isOpen]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -62,7 +56,13 @@ export function RecordReturnDialog({
     } catch (error) {
       console.error("Failed to fetch items", error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchItems();
+    }
+  }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
     try {

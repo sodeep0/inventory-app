@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, MouseEvent } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import {
@@ -38,23 +38,7 @@ function InventoryPage({ token }: { token?: string }) {
   const router = useRouter();
   const { logout } = useAuth();
 
-  useEffect(() => {
-    if (token) {
-      fetchItems(1);
-    }
-  }, [token]);
-
-  // Debounce search input to avoid spamming requests
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      if (token) {
-        fetchItems(1);
-      }
-    }, 300);
-    return () => clearTimeout(handle);
-  }, [search, token]);
-
-  const fetchItems = async (requestedPage = 1) => {
+  const fetchItems = useCallback(async (requestedPage = 1) => {
     if (!token || isLoading) return;
     try {
       setIsLoading(true);
@@ -83,7 +67,23 @@ function InventoryPage({ token }: { token?: string }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, isLoading, pageSize, search, logout]);
+
+  useEffect(() => {
+    if (token) {
+      fetchItems(1);
+    }
+  }, [token, fetchItems]);
+
+  // Debounce search input to avoid spamming requests
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (token) {
+        fetchItems(1);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [search, token, fetchItems]);
 
   const handleNameClick = (itemId: string) => {
     router.push(`/items/${itemId}`);

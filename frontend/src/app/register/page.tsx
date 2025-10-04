@@ -35,7 +35,7 @@ export default function RegisterPage() {
         password,
       });
       router.push("/login");
-    } catch (err) {
+    } catch {
       setError("Failed to register");
     }
   };

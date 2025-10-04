@@ -12,11 +12,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Item } from "@/types";
 
 interface AddItemDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onItemAdded: (item: any) => void;
+  onItemAdded: (item: Item) => void;
   token?: string;
 }
 

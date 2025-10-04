@@ -33,7 +33,7 @@ export default function LoginPage() {
       });
       login({ username, token: res.data.token });
       router.push("/");
-    } catch (err) {
+    } catch {
       setError("Invalid credentials");
     }
   };

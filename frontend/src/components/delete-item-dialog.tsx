@@ -50,7 +50,7 @@ export function DeleteItemDialog({
           <DialogTitle>Are you sure?</DialogTitle>
           <DialogDescription>
             This action cannot be undone. This will permanently delete the item
-            "{item.name}".
+            &quot;{item.name}&quot;.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

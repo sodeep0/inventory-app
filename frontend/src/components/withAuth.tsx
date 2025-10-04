@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 const withAuth = <P extends object>(
-  WrappedComponent: React.ComponentType<P>
+  WrappedComponent: React.ComponentType<P & { token?: string }>
 ) => {
   const Wrapper = (props: P) => {
     const { isAuthenticated, user, loading } = useAuth();

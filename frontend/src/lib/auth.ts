@@ -18,8 +18,10 @@ export const getAuthHeaders = () => {
 };
 
 // Function to handle API errors and logout on 401
-export const handleAuthError = (error: any, logout: () => void) => {
-  if (error?.response?.status === 401) {
+export const handleAuthError = (error: unknown, logout: () => void) => {
+  if (error && typeof error === 'object' && 'response' in error && 
+      error.response && typeof error.response === 'object' && 'status' in error.response && 
+      error.response.status === 401) {
     console.log('Authentication failed, logging out user');
     logout();
   }

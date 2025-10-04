@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import {
   Dialog,
@@ -56,19 +56,7 @@ export function RecordSaleDialog({
   const contentRef = useRef<HTMLDivElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchItems();
-      // Reset form on open
-      setSaleItems([]);
-      setCustomerName("");
-      setSelectedItem("");
-      setQuantity(1);
-      setErrorMessage("");
-    }
-  }, [isOpen, token]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/items`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -79,7 +67,19 @@ export function RecordSaleDialog({
     } catch (error) {
       console.error("Failed to fetch items", error);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchItems();
+      // Reset form on open
+      setSaleItems([]);
+      setCustomerName("");
+      setSelectedItem("");
+      setQuantity(1);
+      setErrorMessage("");
+    }
+  }, [isOpen, fetchItems]);
 
   const handleAddItem = () => {
     const itemToAdd = allItems.find((item) => item._id === selectedItem);
@@ -161,8 +161,11 @@ export function RecordSaleDialog({
       setErrorMessage("");
     } catch (error) {
       console.error("Failed to record sale", error);
-      // @ts-ignore
-      const backendMsg = error?.response?.data?.message;
+      const backendMsg = error && typeof error === 'object' && 'response' in error && 
+        error.response && typeof error.response === 'object' && 'data' in error.response &&
+        error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data
+        ? (error.response.data as { message: string }).message
+        : undefined;
       setErrorMessage(backendMsg || "Failed to record sale. Please try again.");
     }
   };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Table,
@@ -24,7 +24,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
   const [item, setItem] = useState<Item | null>(null);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const [total, setTotal] = useState(0);
   const [continuationQuantity, setContinuationQuantity] = useState<number | null>(null);
   const [isReturnDialogOpen, setIsReturnDialogOpen] = useState(false);
@@ -34,24 +34,26 @@ function ItemDetailsPage({ token }: { token?: string }) {
   const router = useRouter();
   const { logout } = useAuth();
 
-  const fetchItemDetails = async () => {
+  const fetchItemDetails = useCallback(async () => {
     if (!id) return;
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/items/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setItem(res.data);
-    } catch (error: any) {
-      if (error?.response?.status === 404) {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          error.response && typeof error.response === 'object' && 'status' in error.response && 
+          error.response.status === 404) {
         router.replace('/not-found');
         return;
       }
       console.error('Failed to fetch item details', error);
       handleAuthError(error, logout);
     }
-  };
+  }, [id, token, router, logout]);
 
-  const fetchItemMovements = async () => {
+  const fetchItemMovements = useCallback(async () => {
     if (!id) return;
     try {
       const res = await axios.get(
@@ -66,18 +68,18 @@ function ItemDetailsPage({ token }: { token?: string }) {
       } else {
         setMovements([]);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch item movements', error);
       handleAuthError(error, logout);
     }
-  };
+  }, [id, limit, token, logout]);
 
   useEffect(() => {
     if (token) {
       fetchItemDetails();
       fetchItemMovements();
     }
-  }, [id, limit, token]);
+  }, [token, fetchItemDetails, fetchItemMovements]);
 
   const loadMore = async () => {
     if (!id) return;
@@ -93,7 +95,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
         setPage(nextPage);
         setContinuationQuantity(data.continuationQuantity);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to load more movements', error);
       handleAuthError(error, logout);
     }
@@ -117,7 +119,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
         fetchItemDetails();
         fetchItemMovements();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to submit return', error);
       handleAuthError(error, logout);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import {
   Table,
@@ -35,13 +35,7 @@ function MovementsPage({ token }: { token?: string }) {
   const [isAdjustStockDialogOpen, setIsAdjustStockDialogOpen] = useState(false);
   const { logout } = useAuth();
 
-  useEffect(() => {
-    if (token) {
-      fetchMovements();
-    }
-  }, [token]);
-
-  const fetchMovements = async (requestedPage = 1) => {
+  const fetchMovements = useCallback(async (requestedPage = 1) => {
     if (!token || isLoading) return;
     try {
       setIsLoading(true);
@@ -66,7 +60,13 @@ function MovementsPage({ token }: { token?: string }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, isLoading, pageSize, logout]);
+
+  useEffect(() => {
+    if (token) {
+      fetchMovements();
+    }
+  }, [token, fetchMovements]);
 
   const handleMovementAdded = () => {
     // Refresh from first page to show the newest movement at the top
