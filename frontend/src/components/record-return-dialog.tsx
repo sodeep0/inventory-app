@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,7 @@ export function RecordReturnDialog({
 }: RecordReturnDialogProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | "">("");
   const [reason, setReason] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -65,6 +66,8 @@ export function RecordReturnDialog({
   }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
+    if (typeof quantity !== 'number' || quantity <= 0) return;
+    
     try {
       const selectedItemObject = items.find(item => item._id === selectedItem);
       if (!selectedItemObject) return;
@@ -80,8 +83,14 @@ export function RecordReturnDialog({
       );
       onMovementAdded();
       onClose();
+      toast.success("Return recorded successfully!", {
+        description: `Returned ${quantity} unit(s) of ${selectedItemObject.name}.`,
+      });
     } catch (error) {
       console.error("Failed to record return", error);
+      toast.error("Failed to record return", {
+        description: "Please try again.",
+      });
     }
   };
 
@@ -115,9 +124,10 @@ export function RecordReturnDialog({
             <Input
               id="quantity"
               type="number"
+              min="1"
               value={quantity}
-              onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-              placeholder="Enter quantity"
+              onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))}
+              placeholder="0"
             />
           </div>
           <div className="space-y-2">
@@ -134,7 +144,7 @@ export function RecordReturnDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="w-full sm:w-auto">Record Return</Button>
+          <Button onClick={handleSubmit} disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0} className="w-full sm:w-auto">Record Return</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

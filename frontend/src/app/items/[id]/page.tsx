@@ -170,6 +170,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
                 <TableHead>Type</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Quantity Change</TableHead>
+                <TableHead>Running Quantity</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -201,7 +202,14 @@ function ItemDetailsPage({ token }: { token?: string }) {
                     </span>
                   </TableCell>
                   <TableCell>{movement.customerName}</TableCell>
-                  <TableCell>{movement.delta}</TableCell>
+                  <TableCell>
+                    <span className={movement.delta > 0 ? 'text-green-600 font-medium' : movement.delta < 0 ? 'text-red-600 font-medium' : ''}>
+                      {movement.delta > 0 ? '+' : ''}{movement.delta}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-semibold">{movement.runningQuantity ?? '-'}</span>
+                  </TableCell>
                   <TableCell>
                     {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
                   </TableCell>
@@ -269,8 +277,14 @@ function ItemDetailsPage({ token }: { token?: string }) {
                     <p className="font-medium">{movement.customerName || "N/A"}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Quantity:</span>
-                    <p className="font-medium">{movement.delta}</p>
+                    <span className="text-muted-foreground">Quantity Change:</span>
+                    <p className={`font-medium ${movement.delta > 0 ? 'text-green-600' : movement.delta < 0 ? 'text-red-600' : ''}`}>
+                      {movement.delta > 0 ? '+' : ''}{movement.delta}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Running Quantity:</span>
+                    <p className="font-semibold">{movement.runningQuantity ?? '-'}</p>
                   </div>
                 </div>
                 

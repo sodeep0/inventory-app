@@ -1,20 +1,23 @@
-const router = require('express').Router();
-const Item = require('../models/item');
-const StockMovement = require('../models/stockMovement');
-const { generateUniqueSku } = require('../services/skuService');
-const mongoose = require('mongoose');
-const auth = require('../middleware/auth');
+import { Router, Response } from 'express';
+import Item from '../models/item';
+import StockMovement from '../models/stockMovement';
+import { generateUniqueSku } from '../services/skuService';
+import auth from '../middleware/auth';
+import { validate } from '../middleware/validation';
+import { AuthRequest } from '../types';
 
-router.get('/', auth, async (req, res) => {
+const router = Router();
+
+router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const page = parseInt(req.query.page || '1', 10);
-    const limit = parseInt(req.query.limit || '10', 10);
+    const page = parseInt((req.query.page as string) || '1', 10);
+    const limit = parseInt((req.query.limit as string) || '10', 10);
     const skip = (page - 1) * limit;
-    const search = req.query.search || '';
-    const sort = req.query.sort || 'quantity';
+    const search = (req.query.search as string) || '';
+    const sort = (req.query.sort as string) || 'quantity';
 
-    const query = {
-      userId: req.user._id,
+    const query: any = {
+      userId: req.user!._id,
       ...(search && {
         $or: [
           { name: { $regex: search, $options: 'i' } },
@@ -23,7 +26,7 @@ router.get('/', auth, async (req, res) => {
       }),
     };
 
-    const sortOptions = {};
+    const sortOptions: any = {};
     if (sort === 'quantity') {
       sortOptions.quantity = 1;
     } else if (sort === '-quantity') {
@@ -40,19 +43,20 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, validate('item'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { name, quantity, lowStockThreshold, supplierName } = req.body;
 
     if (!name || quantity === undefined || lowStockThreshold === undefined) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      res.status(400).json({ message: 'Missing required fields' });
+      return;
     }
 
     const sku = await generateUniqueSku(name);
 
     const newItem = new Item({
       ...req.body,
-      userId: req.user._id,
+      userId: req.user!._id,
       sku,
       status: 'active',
     });
@@ -61,35 +65,38 @@ router.post('/', auth, async (req, res) => {
 
     await StockMovement.create({
       itemId: result._id,
-      userId: req.user._id,
+      userId: req.user!._id,
       type: 'initial',
       delta: result.quantity,
       reason: 'Initial stock',
     });
 
     res.status(201).json(result._id);
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 11000) {
-      return res.status(409).json({ message: 'SKU already exists' });
+      res.status(409).json({ message: 'SKU already exists' });
+      return;
     }
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', auth, validate('itemUpdate'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { name, quantity, lowStockThreshold, supplierName } = req.body;
 
     if (!name || quantity === undefined || lowStockThreshold === undefined) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      res.status(400).json({ message: 'Missing required fields' });
+      return;
     }
 
-    const item = await Item.findOne({ _id: id, userId: req.user._id });
+    const item = await Item.findOne({ _id: id, userId: req.user!._id });
 
     if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
+      res.status(404).json({ message: 'Item not found' });
+      return;
     }
 
     item.name = name;
@@ -106,18 +113,19 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
-    const result = await Item.findOneAndDelete({ _id: id, userId: req.user._id });
+    const result = await Item.findOneAndDelete({ _id: id, userId: req.user!._id });
 
     if (!result) {
-      return res.status(404).json({ message: 'Item not found' });
+      res.status(404).json({ message: 'Item not found' });
+      return;
     }
 
     // Also delete all stock movements associated with this item
-    await StockMovement.deleteMany({ itemId: id, userId: req.user._id });
+    await StockMovement.deleteMany({ itemId: id, userId: req.user!._id });
 
     res.status(200).json({ message: 'Item and associated movements deleted successfully' });
   } catch (error) {
@@ -126,13 +134,14 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const item = await Item.findOne({ _id: id, userId: req.user._id });
+    const item = await Item.findOne({ _id: id, userId: req.user!._id });
 
     if (!item) {
-      return res.status(404).json({ message: 'Item not found' });
+      res.status(404).json({ message: 'Item not found' });
+      return;
     }
 
     res.json(item);
@@ -142,16 +151,17 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-router.post('/:id/adjust', auth, async (req, res) => {
+router.post('/:id/adjust', auth, validate('adjustment'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { delta, reason, type } = req.body;
     const { id } = req.params;
 
     if (delta === undefined || !reason) {
-      return res.status(400).json({ message: 'Invalid adjustment data' });
+      res.status(400).json({ message: 'Invalid adjustment data' });
+      return;
     }
 
-    const item = await Item.findOne({ _id: id, userId: req.user._id });
+    const item = await Item.findOne({ _id: id, userId: req.user!._id });
     if (!item) {
       throw new Error(`Item with id ${id} not found`);
     }
@@ -160,7 +170,7 @@ router.post('/:id/adjust', auth, async (req, res) => {
     await item.save();
 
     const allowedTypes = ['sale', 'return', 'adjustment', 'purchase', 'initial'];
-    let movementType = 'adjustment';
+    let movementType: 'sale' | 'return' | 'adjustment' | 'purchase' | 'initial' = 'adjustment';
     if (allowedTypes.includes(type)) {
       movementType = type;
     } else if (parseInt(delta, 10) > 0) {
@@ -170,16 +180,17 @@ router.post('/:id/adjust', auth, async (req, res) => {
 
     const movement = await StockMovement.create({
       itemId: item._id,
-      userId: req.user._id,
+      userId: req.user!._id,
       type: movementType,
       delta: parseInt(delta, 10),
       reason,
     });
 
     res.status(201).json({ message: 'Adjustment recorded successfully', movement });
-  } catch (error) {
+  } catch (error: any) {
     res.status(422).json({ message: error.message });
   }
 });
 
-module.exports = router;
+export default router;
+

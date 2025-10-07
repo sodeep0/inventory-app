@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -60,8 +61,14 @@ export function EditItemDialog({
       );
       onItemUpdated(res.data);
       onClose();
+      toast.success("Item updated successfully!", {
+        description: `${name} has been updated.`,
+      });
     } catch (error) {
       console.error("Failed to update item", error);
+      toast.error("Failed to update item", {
+        description: "Please try again.",
+      });
     }
   };
 

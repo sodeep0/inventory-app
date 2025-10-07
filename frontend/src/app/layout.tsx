@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/navbar";
+import GlobalErrorBoundary from "@/components/global-error-boundary";
+import { Toaster } from "@/components/ui/sonner";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -35,14 +37,17 @@ export default function RootLayout({
             `,
           }}
         />
-        <AuthProvider>
-          <main className="min-h-screen bg-background text-foreground">
-            <Navbar />
-            <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-              {children}
-            </div>
-          </main>
-        </AuthProvider>
+        <GlobalErrorBoundary>
+          <AuthProvider>
+            <main className="min-h-screen bg-background text-foreground">
+              <Navbar />
+              <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+                {children}
+              </div>
+            </main>
+            <Toaster />
+          </AuthProvider>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );
