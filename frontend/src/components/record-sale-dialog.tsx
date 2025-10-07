@@ -80,7 +80,7 @@ export function RecordSaleDialog({
       setQuantity("");
       setErrorMessage("");
     }
-  }, [isOpen, fetchItems]);
+  }, [isOpen]); // Remove fetchItems from dependencies
 
   const handleAddItem = () => {
     const itemToAdd = allItems.find((item) => item._id === selectedItem);

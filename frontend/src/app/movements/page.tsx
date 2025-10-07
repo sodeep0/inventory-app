@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import {
   Table,
@@ -34,10 +34,14 @@ function MovementsPage({ token }: { token?: string }) {
     useState(false);
   const [isAdjustStockDialogOpen, setIsAdjustStockDialogOpen] = useState(false);
   const { logout } = useAuth();
+  
+  // Use ref to prevent multiple simultaneous requests
+  const isLoadingRef = useRef(false);
 
   const fetchMovements = useCallback(async (requestedPage = 1) => {
-    if (!token || isLoading) return;
+    if (!token || isLoadingRef.current) return;
     try {
+      isLoadingRef.current = true;
       setIsLoading(true);
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/movements?page=${requestedPage}&limit=${pageSize}`,
@@ -58,9 +62,10 @@ function MovementsPage({ token }: { token?: string }) {
       console.error("Failed to fetch movements", error);
       handleAuthError(error, logout);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [token, pageSize, logout, isLoading]);
+  }, [token, pageSize, logout]);
 
   useEffect(() => {
     if (token) {

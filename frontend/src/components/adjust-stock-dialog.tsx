@@ -62,7 +62,7 @@ export function AdjustStockDialog({
     if (isOpen) {
       fetchItems();
     }
-  }, [isOpen, fetchItems]);
+  }, [isOpen]); // Remove fetchItems from dependencies
 
   const handleSubmit = async () => {
     try {
