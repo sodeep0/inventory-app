@@ -60,7 +60,7 @@ function MovementsPage({ token }: { token?: string }) {
     } finally {
       setIsLoading(false);
     }
-  }, [token, pageSize, logout]);
+  }, [token, pageSize, logout, isLoading]);
 
   useEffect(() => {
     if (token) {

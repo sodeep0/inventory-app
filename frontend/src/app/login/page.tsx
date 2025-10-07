@@ -46,12 +46,14 @@ export default function LoginPage() {
         token: res.data.token 
       });
       router.push("/");
-    } catch (err: string | any) {
+    } catch (err: unknown) {
       const errorMsg = getErrorMessage(err);
       setError(errorMsg);
       
       // Check if verification is required
-      if (err.response?.data?.requireVerification) {
+      if (err && typeof err === 'object' && 'response' in err && 
+          err.response && typeof err.response === 'object' && 'data' in err.response &&
+          err.response.data && typeof err.response.data === 'object' && 'requireVerification' in err.response.data) {
         setShowVerification(true);
         setSuccess("Verification code sent to your email!");
       }
