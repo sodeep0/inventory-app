@@ -19,6 +19,7 @@ export interface StockMovement {
   type: 'sale' | 'purchase' | 'addition' | 'adjustment' | 'return';
   quantity: number;
   delta: number;
+  runningQuantity?: number;
   customerName?: string;
   reason?: string;
   createdAt: string;

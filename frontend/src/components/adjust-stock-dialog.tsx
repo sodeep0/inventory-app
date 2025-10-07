@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -65,17 +66,25 @@ export function AdjustStockDialog({
 
   const handleSubmit = async () => {
     try {
+      const delta = parseInt(quantity) || 0;
+      const itemName = items.find(item => item._id === selectedItem)?.name;
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/items/${selectedItem}/adjust`,
-        { delta: parseInt(quantity) || 0, reason, type: "adjustment" },
+        { delta, reason, type: "adjustment" },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       onMovementAdded();
       onClose();
+      toast.success("Stock adjusted successfully!", {
+        description: `${delta > 0 ? 'Added' : 'Removed'} ${Math.abs(delta)} unit(s)${itemName ? ` ${delta > 0 ? 'to' : 'from'} ${itemName}` : ''}.`,
+      });
     } catch (error) {
       console.error("Failed to adjust stock", error);
+      toast.error("Failed to adjust stock", {
+        description: "Please try again.",
+      });
     }
   };
 

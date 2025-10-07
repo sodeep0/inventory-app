@@ -3,7 +3,6 @@
 import { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,68 +17,81 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { getErrorMessage } from "@/lib/api";
 
-export default function RegisterPage() {
-  const [username, setUsername] = useState("");
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
+  const [step, setStep] = useState<"email" | "verify" | "reset">("email");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setIsLoading(true);
 
-    if (password !== confirmPassword) {
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
+        email,
+      });
+      setSuccess("Password reset code sent to your email!");
+      setStep("verify");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-reset-code`, {
+        email,
+        code: verificationCode,
+      });
+      setSuccess("Code verified! Enter your new password.");
+      setStep("reset");
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    if (password.length < 8) {
+    if (newPassword.length < 8) {
       setError("Password must be at least 8 characters");
       return;
     }
 
     setIsLoading(true);
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        username,
-        email,
-        password,
-      });
-      setSuccess("Verification code sent to your email!");
-      setShowVerification(true);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
 
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
         email,
         code: verificationCode,
+        newPassword,
       });
-      
-      // Auto-login after successful verification
-      login({ 
-        username: res.data.username, 
-        email: res.data.email, 
-        token: res.data.token 
-      });
-      router.push("/");
+      setSuccess("Password reset successful! Redirecting to login...");
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -87,36 +99,59 @@ export default function RegisterPage() {
     }
   };
 
-  const handleResendCode = async () => {
-    setError("");
-    setSuccess("");
-    setIsLoading(true);
-
-    try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        username,
-        email,
-        password,
-      });
-      setSuccess("New verification code sent!");
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (showVerification) {
+  // Step 1: Request reset code
+  if (step === "email") {
     return (
       <div className="flex items-center justify-center min-h-screen px-4">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Verify Email</CardTitle>
+            <CardTitle className="text-2xl">Forgot Password</CardTitle>
+            <CardDescription>
+              Enter your email address and we&apos;ll send you a verification code.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleRequestCode}>
+            <CardContent className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              {success && <p className="text-sm text-green-600">{success}</p>}
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Sending..." : "Send Reset Code"}
+              </Button>
+              <Link href="/login" className="text-sm text-center underline">
+                Back to Login
+              </Link>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 2: Verify code
+  if (step === "verify") {
+    return (
+      <div className="flex items-center justify-center min-h-screen px-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl">Verify Code</CardTitle>
             <CardDescription>
               Enter the 6-digit code sent to {email}
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleVerify}>
+          <form onSubmit={handleVerifyCode}>
             <CardContent className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="code">Verification Code</Label>
@@ -136,13 +171,13 @@ export default function RegisterPage() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading || verificationCode.length !== 6}>
-                {isLoading ? "Verifying..." : "Verify Email"}
+                {isLoading ? "Verifying..." : "Verify Code"}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
-                onClick={handleResendCode}
+                onClick={handleRequestCode}
                 disabled={isLoading}
               >
                 Resend Code
@@ -150,10 +185,9 @@ export default function RegisterPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="w-full"
-                onClick={() => setShowVerification(false)}
+                onClick={() => setStep("email")}
               >
-                Back to Registration
+                Change Email
               </Button>
             </CardFooter>
           </form>
@@ -162,50 +196,27 @@ export default function RegisterPage() {
     );
   }
 
+  // Step 3: Reset password
   return (
     <div className="flex items-center justify-center min-h-screen px-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Register</CardTitle>
+          <CardTitle className="text-2xl">Reset Password</CardTitle>
           <CardDescription>
-            Enter your information to create an account.
+            Enter your new password
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleResetPassword}>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="newPassword">New Password</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="johndoe"
-                required
-                minLength={3}
-                maxLength={30}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
+                id="newPassword"
                 type="password"
                 required
                 minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 At least 8 characters
@@ -224,19 +235,14 @@ export default function RegisterPage() {
             {error && <p className="text-sm text-destructive">{error}</p>}
             {success && <p className="text-sm text-green-600">{success}</p>}
           </CardContent>
-          <CardFooter className="flex flex-col">
+          <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? "Resetting..." : "Reset Password"}
             </Button>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/login" className="underline">
-                Sign in
-              </Link>
-            </div>
           </CardFooter>
         </form>
       </Card>
     </div>
   );
 }
+

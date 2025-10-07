@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -51,7 +52,7 @@ export function RecordSaleDialog({
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedItem, setSelectedItem] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | "">("");
   const [customerName, setCustomerName] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -76,14 +77,14 @@ export function RecordSaleDialog({
       setSaleItems([]);
       setCustomerName("");
       setSelectedItem("");
-      setQuantity(1);
+      setQuantity("");
       setErrorMessage("");
     }
   }, [isOpen, fetchItems]);
 
   const handleAddItem = () => {
     const itemToAdd = allItems.find((item) => item._id === selectedItem);
-    if (!itemToAdd || quantity <= 0) return;
+    if (!itemToAdd || typeof quantity !== 'number' || quantity <= 0) return;
 
     // Check if item is already in the sale
     const existingItemIndex = saleItems.findIndex(
@@ -119,7 +120,7 @@ export function RecordSaleDialog({
 
     // Reset inputs
     setSelectedItem("");
-    setQuantity(1);
+    setQuantity("");
     setErrorMessage("");
   };
 
@@ -159,6 +160,10 @@ export function RecordSaleDialog({
       onMovementAdded();
       onClose();
       setErrorMessage("");
+      const totalItems = saleItems.reduce((sum, item) => sum + item.quantity, 0);
+      toast.success("Sale recorded successfully!", {
+        description: `Sold ${totalItems} item(s)${customerName ? ` to ${customerName}` : ''}.`,
+      });
     } catch (error) {
       console.error("Failed to record sale", error);
       const backendMsg = error && typeof error === 'object' && 'response' in error && 
@@ -167,6 +172,9 @@ export function RecordSaleDialog({
         ? (error.response.data as { message: string }).message
         : undefined;
       setErrorMessage(backendMsg || "Failed to record sale. Please try again.");
+      toast.error("Failed to record sale", {
+        description: backendMsg || "Please try again.",
+      });
     }
   };
 
@@ -252,14 +260,14 @@ export function RecordSaleDialog({
                   id="quantity"
                   type="number"
                   value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                  placeholder="1"
+                  onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="0"
                 />
               </div>
               <div className="flex items-end">
                 <Button
                   onClick={handleAddItem}
-                  disabled={!selectedItem || quantity <= 0}
+                  disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0}
                   className="w-full"
                 >
                   Add

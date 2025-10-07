@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -62,8 +63,14 @@ export function AddItemDialog({
       setLowStockThreshold("");
       setSupplierName("");
       onClose();
+      toast.success("Item added successfully!", {
+        description: `${name} has been added to inventory.`,
+      });
     } catch (error) {
       console.error("Failed to add item", error);
+      toast.error("Failed to add item", {
+        description: "Please try again.",
+      });
     }
   };
 

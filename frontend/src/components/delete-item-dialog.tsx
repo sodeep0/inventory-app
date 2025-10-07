@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -38,8 +39,14 @@ export function DeleteItemDialog({
       });
       onItemDeleted(item._id);
       onClose();
+      toast.success("Item deleted successfully!", {
+        description: `${item.name} has been removed from inventory.`,
+      });
     } catch (error) {
       console.error("Failed to delete item", error);
+      toast.error("Failed to delete item", {
+        description: "Please try again.",
+      });
     }
   };
 
