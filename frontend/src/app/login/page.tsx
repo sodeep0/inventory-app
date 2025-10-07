@@ -46,7 +46,7 @@ export default function LoginPage() {
         token: res.data.token 
       });
       router.push("/");
-    } catch (err: any) {
+    } catch (err: string | any) {
       const errorMsg = getErrorMessage(err);
       setError(errorMsg);
       

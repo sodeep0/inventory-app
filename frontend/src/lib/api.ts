@@ -93,16 +93,16 @@ export const getErrorMessage = (error: unknown): string => {
 
 // Type-safe API methods
 export const apiClient = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig) => 
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig) => 
     api.get<T>(url, config).then(res => res.data),
   
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => 
     api.post<T>(url, data, config).then(res => res.data),
   
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig) => 
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => 
     api.put<T>(url, data, config).then(res => res.data),
   
-  delete: <T = any>(url: string, config?: AxiosRequestConfig) => 
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig) => 
     api.delete<T>(url, config).then(res => res.data),
 };
 
