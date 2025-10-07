@@ -8,9 +8,26 @@ connectDB();
 const app = express();
 const port = process.env.PORT || 5000;
 
-//allow cors for https://inventory-app-vert-two.vercel.app/
+// CORS configuration - allow multiple origins for different deployments
+const allowedOrigins = [
+  'https://inventory-app-sudip.vercel.app',
+  'https://inventory-app-ftnc.vercel.app',
+  'http://localhost:3000', // For local development
+  process.env.FRONTEND_URL // From environment variable
+].filter(Boolean); // Remove any undefined values
+
 app.use(cors({
-  origin: 'https://inventory-app-sudip.vercel.app',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 
