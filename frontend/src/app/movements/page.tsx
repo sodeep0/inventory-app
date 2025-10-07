@@ -71,7 +71,7 @@ function MovementsPage({ token }: { token?: string }) {
     if (token) {
       fetchMovements();
     }
-  }, [token, fetchMovements]);
+  }, [token]);
 
   const handleMovementAdded = () => {
     // Refresh from first page to show the newest movement at the top
