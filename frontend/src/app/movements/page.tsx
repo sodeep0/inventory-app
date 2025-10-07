@@ -65,7 +65,7 @@ function MovementsPage({ token }: { token?: string }) {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [token, pageSize, logout]);
+  }, [token, pageSize]); // Remove logout from dependencies
 
   useEffect(() => {
     if (token) {
