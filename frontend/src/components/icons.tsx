@@ -26,6 +26,8 @@ import {
   Eye,
   CheckCircle,
   CaretRight,
+  Coins,
+  ShoppingCart,
 } from "@phosphor-icons/react"
 
 const iconMap = {
@@ -56,6 +58,8 @@ const iconMap = {
   Eye,
   CheckCircle,
   CaretRight,
+  Coins,
+  ShoppingCart,
 }
 
 type IconName = keyof typeof iconMap
