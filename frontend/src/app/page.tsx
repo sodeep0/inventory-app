@@ -84,7 +84,7 @@ export default function Home() {
 
               <Card className="border border-border/60 p-4">
                 <CardHeader className="p-0 mb-2">
-                  <PhosphorIcon name="Warning" size={20} className="text-muted-foreground mb-1" />
+                  <PhosphorIcon name="WarningCircle" size={20} className="text-muted-foreground mb-1" />
                   <CardTitle className="text-sm text-muted-foreground">Low Stock</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
