@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { PhosphorIcon } from "@/components/icons";
 
 interface Item {
   _id: string;
@@ -54,6 +54,7 @@ export function RecordSaleDialog({
   const [selectedItem, setSelectedItem] = useState("");
   const [quantity, setQuantity] = useState<number | "">("");
   const [customerName, setCustomerName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -73,20 +74,18 @@ export function RecordSaleDialog({
   useEffect(() => {
     if (isOpen) {
       fetchItems();
-      // Reset form on open
       setSaleItems([]);
       setCustomerName("");
       setSelectedItem("");
       setQuantity("");
       setErrorMessage("");
     }
-  }, [isOpen]); // Remove fetchItems from dependencies
+  }, [isOpen]);
 
   const handleAddItem = () => {
     const itemToAdd = allItems.find((item) => item._id === selectedItem);
     if (!itemToAdd || typeof quantity !== 'number' || quantity <= 0) return;
 
-    // Check if item is already in the sale
     const existingItemIndex = saleItems.findIndex(
       (item) => item.itemId === itemToAdd._id
     );
@@ -101,12 +100,10 @@ export function RecordSaleDialog({
     }
 
     if (existingItemIndex > -1) {
-      // Update quantity if item already exists
       const updatedSaleItems = [...saleItems];
       updatedSaleItems[existingItemIndex].quantity += quantity;
       setSaleItems(updatedSaleItems);
     } else {
-      // Add new item to the sale
       setSaleItems([
         ...saleItems,
         {
@@ -118,7 +115,6 @@ export function RecordSaleDialog({
       ]);
     }
 
-    // Reset inputs
     setSelectedItem("");
     setQuantity("");
     setErrorMessage("");
@@ -129,9 +125,9 @@ export function RecordSaleDialog({
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (saleItems.length === 0) return;
 
-    // Client-side validation before submit
     for (const si of saleItems) {
       const item = allItems.find((ai) => ai._id === si.itemId || ai.sku === si.sku);
       if (!item) {
@@ -147,6 +143,7 @@ export function RecordSaleDialog({
     }
 
     try {
+      setIsSubmitting(true);
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/sales`,
         {
@@ -161,7 +158,7 @@ export function RecordSaleDialog({
       onClose();
       setErrorMessage("");
       const totalItems = saleItems.reduce((sum, item) => sum + item.quantity, 0);
-      toast.success("Sale recorded successfully!", {
+      toast.success("Sale recorded successfully.", {
         description: `Sold ${totalItems} item(s)${customerName ? ` to ${customerName}` : ''}.`,
       });
     } catch (error) {
@@ -172,9 +169,11 @@ export function RecordSaleDialog({
         ? (error.response.data as { message: string }).message
         : undefined;
       setErrorMessage(backendMsg || "Failed to record sale. Please try again.");
-      toast.error("Failed to record sale", {
+      toast.error("Failed to record sale.", {
         description: backendMsg || "Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -182,16 +181,15 @@ export function RecordSaleDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-2xl" ref={contentRef}>
         <DialogHeader>
-          <DialogTitle>Record Batch Sale</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Record Sale</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {errorMessage && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/30 dark:text-red-200">
+            <div className="rounded-md border border-pale-red-text/20 bg-pale-red-bg px-4 py-2 text-sm text-pale-red-text">
               {errorMessage}
             </div>
           )}
           
-          {/* Customer Name */}
           <div className="space-y-2">
             <Label htmlFor="customerName">Customer Name</Label>
             <Input
@@ -202,10 +200,9 @@ export function RecordSaleDialog({
             />
           </div>
 
-          {/* Sale Items List */}
           <div className="space-y-2">
             <Label>Sale Items</Label>
-            <div className="rounded-md border px-4 py-2 space-y-2 max-h-40 overflow-y-auto">
+            <div className="rounded-md border border-border/60 px-4 py-2 max-h-40 overflow-y-auto">
               {saleItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No items added yet.
@@ -214,17 +211,17 @@ export function RecordSaleDialog({
                 saleItems.map((item) => (
                   <div
                     key={item.itemId}
-                    className="flex justify-between items-center"
+                    className="flex justify-between items-center py-1.5"
                   >
                     <span className="text-sm">
-                      {item.name} (Qty: {item.quantity})
+                      {item.name} <span className="text-muted-foreground">(Qty: {item.quantity})</span>
                     </span>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => handleRemoveItem(item.itemId)}
                     >
-                      <X className="h-4 w-4" />
+                      <PhosphorIcon name="X" size={14} />
                     </Button>
                   </div>
                 ))
@@ -232,7 +229,6 @@ export function RecordSaleDialog({
             </div>
           </div>
 
-          {/* Add Item Form */}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="item">Add Item</Label>
@@ -240,7 +236,7 @@ export function RecordSaleDialog({
                 <SelectTrigger>
                   <SelectValue placeholder="Select an item" />
                 </SelectTrigger>
-                <SelectContent container={contentRef.current || undefined} className="max-h-60 overflow-y-auto">
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {allItems
                     .slice()
                     .sort((a, b) => a.name.localeCompare(b.name))
@@ -280,8 +276,8 @@ export function RecordSaleDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={saleItems.length === 0} className="w-full sm:w-auto">
-            Record Sale
+          <Button onClick={handleSubmit} disabled={saleItems.length === 0 || isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Recording..." : "Record Sale"}
           </Button>
         </DialogFooter>
       </DialogContent>

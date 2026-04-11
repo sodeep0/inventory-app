@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useState } from "react"
+import axios from "axios"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -11,103 +11,102 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { getErrorMessage } from "@/lib/api";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { getErrorMessage } from "@/lib/api"
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [step, setStep] = useState<"email" | "verify" | "reset">("email");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [email, setEmail] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [step, setStep] = useState<"email" | "verify" | "reset">("email")
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setIsLoading(true);
+    e.preventDefault()
+    setError("")
+    setSuccess("")
+    setIsLoading(true)
 
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
         email,
-      });
-      setSuccess("Password reset code sent to your email!");
-      setStep("verify");
+      })
+      setSuccess("Password reset code sent to your email.")
+      setStep("verify")
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-reset-code`, {
         email,
         code: verificationCode,
-      });
-      setSuccess("Code verified! Enter your new password.");
-      setStep("reset");
+      })
+      setSuccess("Code verified. Enter your new password.")
+      setStep("reset")
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError("")
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
+      setError("Passwords do not match")
+      return
     }
 
     if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
+      setError("Password must be at least 8 characters")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
         email,
         code: verificationCode,
         newPassword,
-      });
-      setSuccess("Password reset successful! Redirecting to login...");
+      })
+      setSuccess("Password reset successful. Redirecting to login...")
       setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+        router.push("/login")
+      }, 2000)
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  // Step 1: Request reset code
   if (step === "email") {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <Card className="w-full max-w-sm">
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+        <Card className="w-full max-w-sm border-border/60">
           <CardHeader>
-            <CardTitle className="text-2xl">Forgot Password</CardTitle>
+            <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Forgot Password</CardTitle>
             <CardDescription>
-              Enter your email address and we&apos;ll send you a verification code.
+              Enter your email and we&apos;ll send a reset code.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleRequestCode}>
@@ -117,36 +116,35 @@ export default function ForgotPasswordPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder="you@example.com"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {success && <p className="text-sm text-green-600">{success}</p>}
+              {error && <p className="text-sm text-pale-red-text">{error}</p>}
+              {success && <p className="text-sm text-pale-green-text">{success}</p>}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Sending..." : "Send Reset Code"}
               </Button>
-              <Link href="/login" className="text-sm text-center underline">
+              <Link href="/login" className="text-sm text-center text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
                 Back to Login
               </Link>
             </CardFooter>
           </form>
         </Card>
       </div>
-    );
+    )
   }
 
-  // Step 2: Verify code
   if (step === "verify") {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <Card className="w-full max-w-sm">
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+        <Card className="w-full max-w-sm border-border/60">
           <CardHeader>
-            <CardTitle className="text-2xl">Verify Code</CardTitle>
+            <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Verify Code</CardTitle>
             <CardDescription>
               Enter the 6-digit code sent to {email}
             </CardDescription>
@@ -166,8 +164,8 @@ export default function ForgotPasswordPage() {
                   className="text-center text-2xl tracking-widest"
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {success && <p className="text-sm text-green-600">{success}</p>}
+              {error && <p className="text-sm text-pale-red-text">{error}</p>}
+              {success && <p className="text-sm text-pale-green-text">{success}</p>}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading || verificationCode.length !== 6}>
@@ -193,17 +191,16 @@ export default function ForgotPasswordPage() {
           </form>
         </Card>
       </div>
-    );
+    )
   }
 
-  // Step 3: Reset password
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+      <Card className="w-full max-w-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-2xl">Reset Password</CardTitle>
+          <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Reset Password</CardTitle>
           <CardDescription>
-            Enter your new password
+            Enter your new password.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleResetPassword}>
@@ -232,8 +229,8 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {success && <p className="text-sm text-green-600">{success}</p>}
+            {error && <p className="text-sm text-pale-red-text">{error}</p>}
+            {success && <p className="text-sm text-pale-green-text">{success}</p>}
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -243,6 +240,5 @@ export default function ForgotPasswordPage() {
         </form>
       </Card>
     </div>
-  );
+  )
 }
-

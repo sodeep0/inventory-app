@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PhosphorIcon } from "@/components/icons"
 
 type Theme = "light" | "dark" | "system"
 
@@ -25,7 +25,6 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("system")
   const [mounted, setMounted] = useState(false)
 
-  // Initialize theme from localStorage on mount
   useEffect(() => {
     setMounted(true)
     const stored = localStorage.getItem("theme") as Theme | null
@@ -34,7 +33,6 @@ export function ThemeToggle() {
     }
   }, [])
 
-  // Apply theme whenever it changes
   useEffect(() => {
     if (!mounted) return
     
@@ -55,26 +53,19 @@ export function ThemeToggle() {
     setTheme(next)
   }
 
-  // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
       <Button variant="ghost" size="icon" aria-label="Toggle theme">
-        <Sun className="h-4 w-4" />
+        <PhosphorIcon name="Sun" size={16} />
       </Button>
     )
   }
 
-  const icon = theme === "dark" ? <Moon className="h-4 w-4" /> : theme === "light" ? <Sun className="h-4 w-4" /> : (
-    <>
-      <Sun className="h-4 w-4" />
-    </>
-  )
+  const icon = theme === "dark" ? "Moon" : "Sun" as const
 
   return (
     <Button variant="ghost" size="icon" aria-label="Toggle theme" onClick={cycleTheme}>
-      {icon}
+      <PhosphorIcon name={icon} size={16} />
     </Button>
   )
 }
-
-

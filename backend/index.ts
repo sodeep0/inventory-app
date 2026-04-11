@@ -6,12 +6,16 @@ import connectDB from './db/mongoose';
 import { logger, httpLogger } from './utils/logger';
 import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import { checkDBConnection } from './middleware/dbCheck';
 
 // Load environment variables
 dotenv.config();
 
-// Connect to database
-connectDB();
+// Connect to database with error handling
+connectDB().catch((error) => {
+  console.error('Failed to connect to database:', error);
+  // Don't exit in serverless - let individual requests handle the error
+});
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -30,9 +34,11 @@ app.use(httpLogger);
 
 // Configure CORS with environment variables
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
+  'https://inventory-app-sudip.vercel.app',
+  'https://inventory-app-ftnc.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
+  process.env.FRONTEND_URL,
 ].filter(Boolean); // Remove any undefined values
 
 app.use(cors({
@@ -70,12 +76,18 @@ app.get('/health', (req, res) => {
 // Apply general rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
+// Apply database connection check to all API routes
+app.use('/api/', checkDBConnection);
+
 // Load route handlers
 import itemsRouter from './api/items';
 import salesRouter from './api/sales';
 import returnsRouter from './api/returns';
 import authRouter from './api/auth';
 import movementsRouter from './api/movements';
+import statsRouter from './api/stats';
+import reportsRouter from './api/reports';
+import exportRouter from './api/export';
 
 // Apply routes
 app.use('/api/items', itemsRouter);
@@ -83,6 +95,9 @@ app.use('/api/sales', salesRouter);
 app.use('/api/returns', returnsRouter);
 app.use('/api/auth', authLimiter, authRouter); // Stricter rate limiting for auth
 app.use('/api/movements', movementsRouter);
+app.use('/api/stats', statsRouter);
+app.use('/api/reports', reportsRouter);
+app.use('/api/export', exportRouter);
 
 // 404 handler for undefined routes
 app.use(notFound);

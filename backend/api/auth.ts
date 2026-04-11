@@ -1,8 +1,14 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/user';
+import Item from '../models/item';
+import StockMovement from '../models/stockMovement';
 import Verification from '../utils/verification';
 import { sendEmail } from '../utils/email';
+import { withRetry } from '../middleware/dbCheck';
+import auth from '../middleware/auth';
+import { AuthRequest } from '../types';
+
 const router = Router();
 
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
@@ -137,17 +143,31 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
     
+    // Use retry logic for database operations
+    const findUser = withRetry(async () => {
+      return await User.findOne({ email });
+    });
+    
+    const findVerification = withRetry(async () => {
+      return await Verification.findOne({ email });
+    });
+    
     // Case-insensitive email lookup
-    const user = await User.findOne({  email });
+    const user = await findUser();
     
     if (!user) {
-      const pending = await Verification.findOne({ email });
+      const pending = await findVerification();
             if (pending) {
                 // regenerate code and expiry
                 const newCode=Math.floor(100000 + Math.random() * 900000).toString();
                 pending.code = newCode;
                 pending.expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-                await pending.save();
+                
+                const saveVerification = withRetry(async () => {
+                  return await pending.save();
+                });
+                await saveVerification();
+                
                 try {
                     await sendEmail({ to_email: email, verification_code: newCode });
                 } catch (e) {
@@ -279,5 +299,96 @@ router.post('/reset-password', async (req: Request, res: Response): Promise<void
     return;
   }
 });
+
+// Update user profile (name)
+router.put('/me', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { username } = req.body;
+
+    if (!username || typeof username !== 'string') {
+      res.status(400).json({ message: 'Username is required' });
+      return;
+    }
+
+    const trimmedUsername = username.trim();
+    if (trimmedUsername.length < 3 || trimmedUsername.length > 30) {
+      res.status(400).json({ message: 'Username must be 3-30 characters' });
+      return;
+    }
+
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    user.username = trimmedUsername;
+    await user.save();
+
+    res.json({ message: 'Profile updated successfully', username: user.username, email: user.email });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Change password
+router.put('/password', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ message: 'Current password and new password are required' });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      res.status(400).json({ message: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    const user = await User.findById(req.user!._id);
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      res.status(401).json({ message: 'Current password is incorrect' });
+      return;
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+// Delete account
+router.delete('/me', auth, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!._id;
+
+    // Delete all items for this user
+    await Item.deleteMany({ userId });
+
+    // Delete all stock movements for this user
+    await StockMovement.deleteMany({ userId });
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
 export default router;
 

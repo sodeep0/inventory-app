@@ -31,21 +31,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error to console
-    console.error('Error Boundary caught an error:', error, errorInfo);
-    
-    // Update state with error details
+    console.error('Error caught:', error, errorInfo);
     this.setState({ errorInfo });
 
-    // Call optional onError callback
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
-    }
-
-    // In production, you could send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
-      // Example: Send to error tracking service
-      // logErrorToService(error, errorInfo);
     }
   }
 
@@ -59,19 +49,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render() {
     if (this.state.hasError) {
-      // If custom fallback provided, use it
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default error UI
       return (
         <div className="flex items-center justify-center min-h-[400px] p-4">
-          <Card className="w-full max-w-lg">
+          <Card className="w-full max-w-lg border-border/60">
             <CardHeader>
               <CardTitle className="text-destructive">Something went wrong</CardTitle>
               <CardDescription>
-                An unexpected error occurred. Please try again.
+                An unexpected error occurred.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -91,7 +79,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 </div>
               )}
               <div className="flex gap-2">
-                <Button onClick={this.handleReset} variant="default">
+                <Button onClick={this.handleReset}>
                   Try Again
                 </Button>
                 <Button
@@ -113,7 +101,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 export default ErrorBoundary;
 
-// Hook for functional components to throw errors that ErrorBoundary can catch
 export const useErrorHandler = () => {
   const [, setError] = React.useState();
 
@@ -123,4 +110,3 @@ export const useErrorHandler = () => {
     });
   }, []);
 };
-

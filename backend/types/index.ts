@@ -26,7 +26,11 @@ export interface IItem {
   sku: string;
   quantity: number;
   lowStockThreshold: number;
+  buyPrice: number;
+  sellPrice: number;
   supplierName?: string;
+  category?: string;
+  tags?: string[];
   status: string;
   userId: Types.ObjectId;
 }

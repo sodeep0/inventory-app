@@ -44,6 +44,7 @@ export function RecordReturnDialog({
   const [selectedItem, setSelectedItem] = useState("");
   const [quantity, setQuantity] = useState<number | "">("");
   const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const fetchItems = useCallback(async () => {
@@ -63,12 +64,14 @@ export function RecordReturnDialog({
     if (isOpen) {
       fetchItems();
     }
-  }, [isOpen]); // Remove fetchItems from dependencies
+  }, [isOpen]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (typeof quantity !== 'number' || quantity <= 0) return;
     
     try {
+      setIsSubmitting(true);
       const selectedItemObject = items.find(item => item._id === selectedItem);
       if (!selectedItemObject) return;
 
@@ -83,14 +86,16 @@ export function RecordReturnDialog({
       );
       onMovementAdded();
       onClose();
-      toast.success("Return recorded successfully!", {
+      toast.success("Return recorded successfully.", {
         description: `Returned ${quantity} unit(s) of ${selectedItemObject.name}.`,
       });
     } catch (error) {
       console.error("Failed to record return", error);
-      toast.error("Failed to record return", {
+      toast.error("Failed to record return.", {
         description: "Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -98,7 +103,7 @@ export function RecordReturnDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-md" ref={contentRef}>
         <DialogHeader>
-          <DialogTitle>Record Return</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Record Return</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -107,7 +112,7 @@ export function RecordReturnDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Select an item" />
               </SelectTrigger>
-              <SelectContent container={contentRef.current || undefined} className="max-h-60 overflow-y-auto">
+              <SelectContent className="max-h-60 overflow-y-auto">
                 {items
                   .slice()
                   .sort((a, b) => a.name.localeCompare(b.name))
@@ -144,7 +149,9 @@ export function RecordReturnDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0} className="w-full sm:w-auto">Record Return</Button>
+          <Button onClick={handleSubmit} disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0 || isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Recording..." : "Record Return"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
