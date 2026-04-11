@@ -145,7 +145,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Analyze your inventory performance and trends.
                 </p>
-                <Button asChild variant="outline" className="w-full" asChild>
+                <Button asChild variant="outline" className="w-full">
                   <Link href="/reports">View Reports</Link>
                 </Button>
               </CardContent>
@@ -160,7 +160,7 @@ export default function Home() {
               </h2>
               <div className="space-y-2">
                 {stats.topItems.map((item, index) => (
-                  <Card key={item._id || index} className="border border-border/60 p-4">
+                  <Card key={item.sku || index} className="border border-border/60 p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-muted-foreground w-6">{index + 1}</span>
