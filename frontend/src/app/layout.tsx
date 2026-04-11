@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, Geist } from "next/font/google";
-// @ts-expect-error Next.js handles CSS side-effect imports.
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/navbar";
