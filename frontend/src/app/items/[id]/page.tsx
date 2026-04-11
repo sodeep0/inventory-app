@@ -94,7 +94,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
       fetchItemDetails();
       fetchItemMovements();
     }
-  }, [token]);
+  }, [token, fetchItemDetails, fetchItemMovements]);
 
   const loadMore = async () => {
     if (!id) return;

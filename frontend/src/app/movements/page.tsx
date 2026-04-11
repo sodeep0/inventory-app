@@ -92,13 +92,13 @@ function MovementsPage({ token }: { token?: string }) {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [token, pageSize, search, typeFilter, sortField, sortDir]);
+  }, [token, pageSize, logout]);
 
   useEffect(() => {
     if (token) {
       fetchMovements();
     }
-  }, [token]);
+  }, [token, fetchMovements]);
 
   useEffect(() => {
     if (!token) return;

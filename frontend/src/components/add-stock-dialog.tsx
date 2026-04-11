@@ -62,7 +62,7 @@ export function AddStockDialog({
     if (isOpen) {
       fetchItems();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
     if (isSubmitting) return;

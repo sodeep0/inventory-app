@@ -265,13 +265,13 @@ function InventoryPage({ token }: { token?: string }) {
       isLoadingRef.current = false;
       setLoadingState(false);
     }
-  }, [token, pageSize, search, sortField, sortDir, categoryFilter, logout]);
+  }, [token, pageSize, search, logout]);
 
   useEffect(() => {
     if (token) {
       fetchItems(1);
     }
-  }, [token]);
+  }, [token, fetchItems]);
 
   useEffect(() => {
     if (!token) return;
@@ -281,7 +281,7 @@ function InventoryPage({ token }: { token?: string }) {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [search, token]);
+  }, [search, token, fetchItems]);
 
   const displayedItems = useMemo(() => {
     if (!lowOnly) return items;

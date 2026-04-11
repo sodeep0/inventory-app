@@ -63,7 +63,7 @@ export function AdjustStockDialog({
     if (isOpen) {
       fetchItems();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
