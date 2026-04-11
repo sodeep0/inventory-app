@@ -61,7 +61,7 @@ export function AddStockDialog({
     if (isOpen) {
       fetchItems();
     }
-  }, [isOpen]); // Remove fetchItems from dependencies
+  }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
     if (typeof quantity !== 'number' || quantity <= 0) return;

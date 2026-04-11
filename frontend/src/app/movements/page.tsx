@@ -65,13 +65,13 @@ function MovementsPage({ token }: { token?: string }) {
       isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [token, pageSize]); // Remove logout from dependencies
+  }, [token, pageSize, logout]);
 
   useEffect(() => {
     if (token) {
       fetchMovements();
     }
-  }, [token]);
+  }, [token, fetchMovements]);
 
   const handleMovementAdded = () => {
     // Refresh from first page to show the newest movement at the top

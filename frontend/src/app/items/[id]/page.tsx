@@ -79,7 +79,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
       fetchItemDetails();
       fetchItemMovements();
     }
-  }, [token]); // Remove fetchItemDetails and fetchItemMovements from dependencies
+  }, [token, fetchItemDetails, fetchItemMovements]);
 
   const loadMore = async () => {
     if (!id) return;

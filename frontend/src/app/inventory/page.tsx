@@ -211,14 +211,14 @@ function InventoryPage({ token }: { token?: string }) {
       isLoadingRef.current = false;
       setLoadingState(false);
     }
-  }, [token, pageSize, search]); // Remove logout from dependencies
+  }, [token, pageSize, search, logout]);
 
   // Initial fetch
   useEffect(() => {
     if (token) {
       fetchItems(1);
     }
-  }, [token]); // Remove fetchItems from dependencies
+  }, [token, fetchItems]);
 
   // Debounced search
   useEffect(() => {
@@ -229,7 +229,7 @@ function InventoryPage({ token }: { token?: string }) {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [search, token]); // Remove fetchItems from dependencies
+  }, [search, token, fetchItems]);
 
   // Memoized filtered items - only recalculate when items or lowOnly changes
   const displayedItems = useMemo(() => {
