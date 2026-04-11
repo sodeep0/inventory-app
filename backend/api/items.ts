@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '10', 10);
+    const limit = Math.min(parseInt((req.query.limit as string) || '10', 10), 100); // Cap at 100 items per page
     const skip = (page - 1) * limit;
     const search = (req.query.search as string) || '';
     const sort = (req.query.sort as string) || 'quantity';
@@ -45,8 +45,11 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
       sortOptions.createdAt = -1;
     }
 
-    const items = await Item.find(query).sort(sortOptions).skip(skip).limit(limit);
-    const total = await Item.countDocuments(query);
+    // Use lean() for better performance when we don't need Mongoose documents
+    const [items, total] = await Promise.all([
+      Item.find(query).sort(sortOptions).skip(skip).limit(limit).lean(),
+      Item.countDocuments(query),
+    ]);
 
     res.json({ items, total });
   } catch (error) {

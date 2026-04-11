@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import connectDB from './db/mongoose';
 import { logger, httpLogger } from './utils/logger';
@@ -22,6 +23,12 @@ const port = process.env.PORT || 5000;
 
 // Trust proxy - important for rate limiting behind reverse proxies (e.g., Vercel)
 app.set('trust proxy', 1);
+
+// Compression middleware - MUST be before other middleware that processes responses
+app.use(compression({
+  level: 6, // Balance between compression ratio and CPU usage
+  threshold: 1024, // Only compress responses larger than 1KB
+}));
 
 // Security headers with Helmet
 app.use(helmet({
@@ -53,11 +60,19 @@ app.use(cors({
     }
   },
   credentials: true,
+  maxAge: 86400, // Cache CORS preflight for 24 hours
 }));
 
-// Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parser with optimized limits
+app.use(express.json({ 
+  limit: '10mb',
+  strict: true, // Only accept arrays and objects
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '10mb',
+  parameterLimit: 1000, // Limit number of parameters
+}));
 
 app.get('/', (req, res) => {
   res.json({
