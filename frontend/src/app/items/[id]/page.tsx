@@ -11,7 +11,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Item, StockMovement } from '@/types';
 import { ReturnReasonDialog } from '@/components/return-reason-dialog';
 import withAuth from '@/components/withAuth';
@@ -19,6 +18,22 @@ import { formatNepaliDateTime } from '@/lib/utils';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { handleAuthError } from '@/lib/auth';
+
+const movementTypeStyle = {
+  sale: "bg-pale-red-bg text-pale-red-text",
+  purchase: "bg-pale-green-bg text-pale-green-text",
+  addition: "bg-pale-green-bg text-pale-green-text",
+  return: "bg-pale-yellow-bg text-pale-yellow-text",
+  adjustment: "bg-pale-blue-bg text-pale-blue-text",
+};
+
+const movementTypeLabel = {
+  sale: "Sale",
+  purchase: "Purchase",
+  addition: "Addition",
+  return: "Return",
+  adjustment: "Adjusted",
+};
 
 function ItemDetailsPage({ token }: { token?: string }) {
   const [item, setItem] = useState<Item | null>(null);
@@ -108,12 +123,10 @@ function ItemDetailsPage({ token }: { token?: string }) {
 
   const handleReturnSubmit = async (reason: string) => {
     if (!selectedMovementId) return;
-
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/returns/from-movement/${selectedMovementId}`, { reason }, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.status === 201) {
         setPage(1);
         fetchItemDetails();
@@ -126,94 +139,135 @@ function ItemDetailsPage({ token }: { token?: string }) {
   };
 
   if (!item) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center py-24 text-sm text-muted-foreground">Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Item Details Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl">{item.name}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">SKU</p>
-              <p className="text-lg">{item.sku}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Quantity</p>
-              <p className="text-lg font-semibold">{item.quantity}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Low Stock Threshold</p>
-              <p className="text-lg">{item.lowStockThreshold}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <p className="text-lg">{item.status}</p>
+    <div className="space-y-8">
+      {/* Item Details */}
+      <div>
+        <Button variant="outline" size="sm" onClick={() => router.back()} className="mb-4">
+          &larr; Back
+        </Button>
+        <h1 className="text-3xl tracking-tight" style={{ fontFamily: "var(--font-instrument), var(--font-serif)", letterSpacing: "-0.02em" }}>
+          {item.name}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">SKU: {item.sku}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Quantity</p>
+          <p className="text-2xl font-semibold">{item.quantity}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Low Stock</p>
+          <p className="text-2xl font-semibold">{item.lowStockThreshold}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Supplier</p>
+          <p className="text-lg">{item.supplierName || "—"}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Status</p>
+          <p className="text-lg">{item.status}</p>
+        </div>
+        {item.category && (
+          <div>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Category</p>
+            <p className="text-lg">{item.category}</p>
+          </div>
+        )}
+        {item.tags && item.tags.length > 0 && (
+          <div className="col-span-2 sm:col-span-4">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Tags</p>
+            <div className="flex flex-wrap gap-1">
+              {item.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       {/* Transaction History */}
       <div className="space-y-4">
-        <h2 className="text-xl font-bold sm:text-2xl">Transaction History</h2>
+        <h2 className="text-xl tracking-tight" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Transaction History</h2>
         
         {/* Desktop Table View */}
-        <div className="hidden md:block rounded-lg border shadow-sm">
+        <div className="hidden md:block rounded-lg border border-border/60">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead>Customer</TableHead>
-                <TableHead>Quantity Change</TableHead>
-                <TableHead>Running Quantity</TableHead>
+                <TableHead>Delta</TableHead>
+                <TableHead>Running</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {movements.map((movement) => (
-                <TableRow key={movement._id.toString()}>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        movement.type === "sale"
-                          ? "bg-red-100 text-red-800"
-                          : movement.type === "purchase" || movement.type === "addition"
-                          ? "bg-green-100 text-green-800"
-                          : movement.type === "return"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {movement.type === "adjustment"
-                        ? "Adjusted"
-                        : movement.type === "purchase" || movement.type === "addition"
-                        ? "Purchased"
-                        : movement.type === "sale"
-                        ? "Sale"
-                        : movement.type === "return"
-                        ? "Returned"
-                        : movement.type}
+              {movements.map((movement) => {
+                const type = movement.type as keyof typeof movementTypeStyle;
+                const style = movementTypeStyle[type] || movementTypeStyle.adjustment;
+                const label = movementTypeLabel[type] || movement.type;
+                return (
+                  <TableRow key={movement._id.toString()}>
+                    <TableCell>
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide ${style}`}>
+                        {label}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{movement.customerName || "—"}</TableCell>
+                    <TableCell>
+                      <span className={movement.delta > 0 ? 'text-pale-green-text font-medium' : movement.delta < 0 ? 'text-pale-red-text font-medium' : ''}>
+                        {movement.delta > 0 ? '+' : ''}{movement.delta}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-semibold">{movement.runningQuantity ?? '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
+                    </TableCell>
+                    <TableCell>
+                      {movement.type === 'sale' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReturnClick(movement._id.toString())}
+                        >
+                          Return
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-3">
+          {movements.map((movement) => {
+            const type = movement.type as keyof typeof movementTypeStyle;
+            const style = movementTypeStyle[type] || movementTypeStyle.adjustment;
+            const label = movementTypeLabel[type] || movement.type;
+            return (
+              <div
+                key={movement._id.toString()}
+                className="rounded-lg border border-border/60 p-4 bg-card"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide ${style}`}>
+                      {label}
                     </span>
-                  </TableCell>
-                  <TableCell>{movement.customerName}</TableCell>
-                  <TableCell>
-                    <span className={movement.delta > 0 ? 'text-green-600 font-medium' : movement.delta < 0 ? 'text-red-600 font-medium' : ''}>
-                      {movement.delta > 0 ? '+' : ''}{movement.delta}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-semibold">{movement.runningQuantity ?? '-'}</span>
-                  </TableCell>
-                  <TableCell>
-                    {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
-                  </TableCell>
-                  <TableCell>
                     {movement.type === 'sale' && (
                       <Button
                         variant="outline"
@@ -223,80 +277,35 @@ function ItemDetailsPage({ token }: { token?: string }) {
                         Return
                       </Button>
                     )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-3">
-          {movements.map((movement) => (
-            <div
-              key={movement._id.toString()}
-              className="rounded-lg border p-4 shadow-sm bg-card"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      movement.type === "sale"
-                        ? "bg-red-100 text-red-800"
-                        : movement.type === "purchase" || movement.type === "addition"
-                        ? "bg-green-100 text-green-800"
-                        : movement.type === "return"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {movement.type === "adjustment"
-                      ? "Adjusted"
-                      : movement.type === "purchase" || movement.type === "addition"
-                      ? "Purchased"
-                      : movement.type === "sale"
-                      ? "Sale"
-                      : movement.type === "return"
-                      ? "Returned"
-                      : movement.type}
-                  </span>
-                  {movement.type === 'sale' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleReturnClick(movement._id.toString())}
-                    >
-                      Return
-                    </Button>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Customer:</span>
-                    <p className="font-medium">{movement.customerName || "N/A"}</p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Quantity Change:</span>
-                    <p className={`font-medium ${movement.delta > 0 ? 'text-green-600' : movement.delta < 0 ? 'text-red-600' : ''}`}>
-                      {movement.delta > 0 ? '+' : ''}{movement.delta}
+                  
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Customer</span>
+                      <p className="font-medium">{movement.customerName || "—"}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Delta</span>
+                      <p className={`font-medium ${movement.delta > 0 ? 'text-pale-green-text' : movement.delta < 0 ? 'text-pale-red-text' : ''}`}>
+                        {movement.delta > 0 ? '+' : ''}{movement.delta}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Running</span>
+                      <p className="font-semibold">{movement.runningQuantity ?? '—'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Date</span>
+                    <p className="font-medium">
+                      {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
                     </p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Running Quantity:</span>
-                    <p className="font-semibold">{movement.runningQuantity ?? '-'}</p>
-                  </div>
-                </div>
-                
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Date:</span>
-                  <p className="font-medium">
-                    {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
-                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Load More Button */}
@@ -308,6 +317,7 @@ function ItemDetailsPage({ token }: { token?: string }) {
           )}
         </div>
       </div>
+
       <ReturnReasonDialog
         isOpen={isReturnDialogOpen}
         onClose={() => setIsReturnDialogOpen(false)}

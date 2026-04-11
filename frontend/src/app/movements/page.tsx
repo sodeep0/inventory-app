@@ -16,11 +16,27 @@ import { AddStockDialog } from "@/components/add-stock-dialog";
 import { RecordReturnDialog } from "@/components/record-return-dialog";
 import { AdjustStockDialog } from "@/components/adjust-stock-dialog";
 import withAuth from "@/components/withAuth";
-import { PlusCircle, MinusCircle, Undo2, Settings2 } from "lucide-react";
+import { PhosphorIcon } from "@/components/icons";
 import { formatNepaliDateTime } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleAuthError } from "@/lib/auth";
 import { StockMovement } from "@/types";
+
+const movementTypeStyle = {
+  sale: "bg-pale-red-bg text-pale-red-text",
+  purchase: "bg-pale-green-bg text-pale-green-text",
+  addition: "bg-pale-green-bg text-pale-green-text",
+  return: "bg-pale-yellow-bg text-pale-yellow-text",
+  adjustment: "bg-pale-blue-bg text-pale-blue-text",
+};
+
+const movementTypeLabel = {
+  sale: "Sale",
+  purchase: "Purchase",
+  addition: "Addition",
+  return: "Return",
+  adjustment: "Adjusted",
+};
 
 function MovementsPage({ token }: { token?: string }) {
   const [movements, setMovements] = useState<StockMovement[]>([]);
@@ -33,9 +49,12 @@ function MovementsPage({ token }: { token?: string }) {
   const [isRecordReturnDialogOpen, setIsRecordReturnDialogOpen] =
     useState(false);
   const [isAdjustStockDialogOpen, setIsAdjustStockDialogOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const { logout } = useAuth();
   
-  // Use ref to prevent multiple simultaneous requests
   const isLoadingRef = useRef(false);
 
   const fetchMovements = useCallback(async (requestedPage = 1) => {
@@ -43,8 +62,16 @@ function MovementsPage({ token }: { token?: string }) {
     try {
       isLoadingRef.current = true;
       setIsLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", String(requestedPage));
+      params.set("limit", String(pageSize));
+      if (search.trim()) params.set("search", search.trim());
+      if (typeFilter) params.set("type", typeFilter);
+      const sortParam = sortDir === "desc" ? `-${sortField}` : sortField;
+      params.set("sort", sortParam);
+
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/movements?page=${requestedPage}&limit=${pageSize}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/movements?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -73,8 +100,17 @@ function MovementsPage({ token }: { token?: string }) {
     }
   }, [token, fetchMovements]);
 
+  useEffect(() => {
+    if (!token) return;
+    
+    const timeoutId = setTimeout(() => {
+      fetchMovements(1);
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
+  }, [search, typeFilter, token]);
+
   const handleMovementAdded = () => {
-    // Refresh from first page to show the newest movement at the top
     fetchMovements(1);
   };
 
@@ -85,150 +121,223 @@ function MovementsPage({ token }: { token?: string }) {
     }
   };
 
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDir(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold sm:text-3xl">Stock Movements</h1>
+        <div>
+          <h1 className="text-3xl tracking-tight" style={{ fontFamily: "var(--font-instrument), var(--font-serif)", letterSpacing: "-0.02em" }}>
+            Movements
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Track stock changes across your inventory.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            const userJSON = localStorage.getItem("user");
+            if (!userJSON) return;
+            const userData = JSON.parse(userJSON);
+            window.open(`${process.env.NEXT_PUBLIC_API_URL}/export/movements?token=${userData.token}`, "_blank");
+          }}
+        >
+          <PhosphorIcon name="DownloadSimple" size={16} /> Export
+        </Button>
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Button 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Button
           onClick={() => setIsRecordSaleDialogOpen(true)}
-          className="w-full"
+          variant="outline"
         >
-          <MinusCircle className="mr-2 h-4 w-4" /> Record Sale
+          <PhosphorIcon name="Minus" size={16} /> Sale
         </Button>
-        <Button 
+        <Button
           onClick={() => setIsAddStockDialogOpen(true)}
-          className="w-full"
+          variant="outline"
         >
-          <PlusCircle className="mr-2 h-4 w-4" /> Add Stock
+          <PhosphorIcon name="Plus" size={16} /> Add Stock
         </Button>
-        <Button 
+        <Button
           onClick={() => setIsRecordReturnDialogOpen(true)}
-          className="w-full"
+          variant="outline"
         >
-          <Undo2 className="mr-2 h-4 w-4" /> Record Return
+          <PhosphorIcon name="ArrowCounterClockwise" size={16} /> Return
         </Button>
-        <Button 
+        <Button
           onClick={() => setIsAdjustStockDialogOpen(true)}
-          className="w-full"
+          variant="outline"
         >
-          <Settings2 className="mr-2 h-4 w-4" /> Adjust Stock
+          <PhosphorIcon name="SlidersHorizontal" size={16} /> Adjust
         </Button>
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-sm">
+          <input
+            type="text"
+            placeholder="Search by item name"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          />
+        </div>
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          <option value="">All Types</option>
+          <option value="sale">Sale</option>
+          <option value="purchase">Purchase</option>
+          <option value="return">Return</option>
+          <option value="adjustment">Adjustment</option>
+        </select>
+      </div>
+
       {/* Desktop Table View */}
-      <div className="hidden md:block rounded-lg border shadow-sm">
+      <div className="hidden md:block rounded-lg border border-border/60">
         <Table>
           <TableHeader>
             <TableRow key="header">
-              <TableHead>Item</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground"
+                onClick={() => handleSort("itemId")}
+              >
+                <span className="flex items-center gap-1">
+                  Item
+                  {sortField === "itemId" && (
+                    <PhosphorIcon name={sortDir === "asc" ? "CaretUp" : "CaretDown"} size={14} />
+                  )}
+                </span>
+              </TableHead>
               <TableHead>SKU</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Date</TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground"
+                onClick={() => handleSort("type")}
+              >
+                <span className="flex items-center gap-1">
+                  Type
+                  {sortField === "type" && (
+                    <PhosphorIcon name={sortDir === "asc" ? "CaretUp" : "CaretDown"} size={14} />
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground"
+                onClick={() => handleSort("delta")}
+              >
+                <span className="flex items-center gap-1">
+                  Delta
+                  {sortField === "delta" && (
+                    <PhosphorIcon name={sortDir === "asc" ? "CaretUp" : "CaretDown"} size={14} />
+                  )}
+                </span>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer select-none hover:text-foreground"
+                onClick={() => handleSort("createdAt")}
+              >
+                <span className="flex items-center gap-1">
+                  Date
+                  {sortField === "createdAt" && (
+                    <PhosphorIcon name={sortDir === "asc" ? "CaretUp" : "CaretDown"} size={14} />
+                  )}
+                </span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {movements.map((movement) => (
-              <TableRow key={movement._id}>
-                <TableCell>
-                  {movement.itemId ? movement.itemId.name : "N/A"}
-                </TableCell>
-                <TableCell>
-                  {movement.itemId ? movement.itemId.sku : "N/A"}
-                </TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      movement.type === "sale"
-                        ? "bg-red-100 text-red-800"
-                        : movement.type === "purchase" || movement.type === "addition"
-                        ? "bg-green-100 text-green-800"
-                        : movement.type === "return"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {movement.type === "adjustment"
-                      ? "Adjusted"
-                      : movement.type === "purchase" || movement.type === "addition"
-                      ? "Purchased"
-                      : movement.type === "sale"
-                      ? "Sale"
-                      : movement.type === "return"
-                      ? "Returned"
-                      : movement.type}
-                  </span>
-                </TableCell>
-                <TableCell>{(movement.delta)}</TableCell>
-                <TableCell>
-                  {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
-                </TableCell>
-              </TableRow>
-            ))}
+            {movements.map((movement) => {
+              const type = movement.type as keyof typeof movementTypeStyle;
+              const style = movementTypeStyle[type] || movementTypeStyle.adjustment;
+              const label = movementTypeLabel[type] || movement.type;
+              return (
+                <TableRow key={movement._id}>
+                  <TableCell>
+                    {movement.itemId ? movement.itemId.name : "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {movement.itemId ? movement.itemId.sku : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide ${style}`}
+                    >
+                      {label}
+                    </span>
+                  </TableCell>
+                  <TableCell className={movement.delta >= 0 ? "text-pale-green-text" : "text-pale-red-text"}>
+                    {movement.delta >= 0 ? `+${movement.delta}` : movement.delta}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {movements.map((movement) => (
-          <div
-            key={movement._id}
-            className="rounded-lg border p-4 shadow-sm bg-card"
-          >
-            <div className="space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <h3 className="font-medium text-lg">
-                    {movement.itemId ? movement.itemId.name : "N/A"}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    SKU: {movement.itemId ? movement.itemId.sku : "N/A"}
-                  </p>
+        {movements.map((movement) => {
+          const type = movement.type as keyof typeof movementTypeStyle;
+          const style = movementTypeStyle[type] || movementTypeStyle.adjustment;
+          const label = movementTypeLabel[type] || movement.type;
+          return (
+            <div
+              key={movement._id}
+              className="rounded-lg border border-border/60 p-4 bg-card"
+            >
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-lg">
+                      {movement.itemId ? movement.itemId.name : "—"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      SKU: {movement.itemId ? movement.itemId.sku : "—"}
+                    </p>
+                  </div>
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium tracking-wide ${style}`}
+                  >
+                    {label}
+                  </span>
                 </div>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    movement.type === "sale"
-                      ? "bg-red-100 text-red-800"
-                      : movement.type === "purchase" || movement.type === "addition"
-                      ? "bg-green-100 text-green-800"
-                      : movement.type === "return"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-blue-100 text-blue-800"
-                  }`}
-                >
-                  {movement.type === "adjustment"
-                    ? "Adjusted"
-                    : movement.type === "purchase" || movement.type === "addition"
-                    ? "Purchased"
-                    : movement.type === "sale"
-                    ? "Sale"
-                    : movement.type === "return"
-                    ? "Returned"
-                    : movement.type}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Quantity Change:</span>
-                  <p className="font-medium">{movement.delta}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Date:</span>
-                  <p className="font-medium">
-                    {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
-                  </p>
+                
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Delta</span>
+                    <p className={`font-medium ${movement.delta >= 0 ? "text-pale-green-text" : "text-pale-red-text"}`}>
+                      {movement.delta >= 0 ? `+${movement.delta}` : movement.delta}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Date</span>
+                    <p className="font-medium">
+                      {formatNepaliDateTime(movement.createdAt, { language: 'en' })}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Load More Button */}
@@ -239,7 +348,7 @@ function MovementsPage({ token }: { token?: string }) {
           disabled={isLoading || movements.length >= total}
           className="w-full sm:w-auto"
         >
-          {movements.length >= total ? "No more records" : isLoading ? "Loading..." : "Load more"}
+          {movements.length >= total ? "All records loaded" : isLoading ? "Loading..." : "Load more"}
         </Button>
       </div>
 

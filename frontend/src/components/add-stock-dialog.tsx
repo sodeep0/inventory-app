@@ -42,6 +42,7 @@ export function AddStockDialog({
   const [items, setItems] = useState<Item[]>([]);
   const [selectedItem, setSelectedItem] = useState("");
   const [quantity, setQuantity] = useState<number | "">("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const fetchItems = useCallback(async () => {
@@ -64,9 +65,11 @@ export function AddStockDialog({
   }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (typeof quantity !== 'number' || quantity <= 0) return;
     
     try {
+      setIsSubmitting(true);
       const itemName = items.find(item => item._id === selectedItem)?.name;
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/items/${selectedItem}/adjust`,
@@ -77,14 +80,16 @@ export function AddStockDialog({
       );
       onMovementAdded();
       onClose();
-      toast.success("Stock added successfully!", {
+      toast.success("Stock added successfully.", {
         description: `Added ${quantity} units${itemName ? ` to ${itemName}` : ''}.`,
       });
     } catch (error) {
       console.error("Failed to add stock", error);
-      toast.error("Failed to add stock", {
+      toast.error("Failed to add stock.", {
         description: "Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -92,7 +97,7 @@ export function AddStockDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-md" ref={contentRef}>
         <DialogHeader>
-          <DialogTitle>Add Stock</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Add Stock</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -101,7 +106,7 @@ export function AddStockDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Select an item" />
               </SelectTrigger>
-              <SelectContent container={contentRef.current || undefined} className="max-h-60 overflow-y-auto">
+              <SelectContent className="max-h-60 overflow-y-auto">
                 {items
                   .slice()
                   .sort((a, b) => a.name.localeCompare(b.name))
@@ -128,8 +133,9 @@ export function AddStockDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          
-          <Button onClick={handleSubmit} disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0} className="w-full sm:w-auto">Add Stock</Button>
+          <Button onClick={handleSubmit} disabled={!selectedItem || typeof quantity !== 'number' || quantity <= 0 || isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Adding..." : "Add Stock"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,10 +1,7 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -12,87 +9,88 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { getErrorMessage } from "@/lib/api";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { getErrorMessage } from "@/lib/api"
+import { useState } from "react"
+import axios from "axios"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { login } = useAuth();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [showVerification, setShowVerification] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { login } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         email,
         password,
-      });
+      })
       
       login({ 
         username: res.data.username, 
         email: res.data.email, 
         token: res.data.token 
-      });
-      router.push("/");
+      })
+      router.push("/")
     } catch (err: unknown) {
-      const errorMsg = getErrorMessage(err);
-      setError(errorMsg);
+      const errorMsg = getErrorMessage(err)
+      setError(errorMsg)
       
-      // Check if verification is required
       if (err && typeof err === 'object' && 'response' in err && 
           err.response && typeof err.response === 'object' && 'data' in err.response &&
           err.response.data && typeof err.response.data === 'object' && 'requireVerification' in err.response.data) {
-        setShowVerification(true);
-        setSuccess("Verification code sent to your email!");
+        setShowVerification(true)
+        setSuccess("Verification code sent to your email.")
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
         email,
         code: verificationCode,
-      });
+      })
       
-      // Auto-login after verification
       login({ 
         username: res.data.username, 
         email: res.data.email, 
         token: res.data.token 
-      });
-      router.push("/");
+      })
+      router.push("/")
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   if (showVerification) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <Card className="w-full max-w-sm">
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+        <Card className="w-full max-w-sm border-border/60">
           <CardHeader>
-            <CardTitle className="text-2xl">Verify Email</CardTitle>
+            <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Verify Email</CardTitle>
             <CardDescription>
               Enter the 6-digit code sent to {email}
             </CardDescription>
@@ -112,8 +110,8 @@ export default function LoginPage() {
                   className="text-center text-2xl tracking-widest"
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {success && <p className="text-sm text-green-600">{success}</p>}
+              {error && <p className="text-sm text-pale-red-text">{error}</p>}
+              {success && <p className="text-sm text-pale-green-text">{success}</p>}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading || verificationCode.length !== 6}>
@@ -131,16 +129,16 @@ export default function LoginPage() {
           </form>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+      <Card className="w-full max-w-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Sign In</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account.
+            Enter your email and password to continue.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
@@ -150,7 +148,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder="you@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -159,7 +157,7 @@ export default function LoginPage() {
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm underline">
+                <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4">
                   Forgot password?
                 </Link>
               </div>
@@ -171,21 +169,21 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p className="text-sm text-pale-red-text">{error}</p>}
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="underline">
-                Sign up
+              <Link href="/register" className="text-foreground underline underline-offset-4 hover:opacity-70 transition-opacity">
+                Create one
               </Link>
             </div>
           </CardFooter>
         </form>
       </Card>
     </div>
-  );
+  )
 }

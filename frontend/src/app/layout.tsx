@@ -1,16 +1,32 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Instrument_Serif, Geist } from "next/font/google";
+// @ts-expect-error Next.js handles CSS side-effect imports.
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/navbar";
 import GlobalErrorBoundary from "@/components/global-error-boundary";
 import { Toaster } from "@/components/ui/sonner";
+import InstallPrompt from "@/components/install-prompt";
+import ScriptRegistration from "@/components/sw-registration";
 
-const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"] });
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const instrumentSerif = Instrument_Serif({ weight: "400", subsets: ["latin"], variable: "--font-instrument" });
 
 export const metadata: Metadata = {
   title: "Stock Keeper",
   description: "A simple inventory management app.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Stock Keeper",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  themeColor: "#16697A",
 };
 
 export default function RootLayout({
@@ -20,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={plusJakartaSans.className}>
+      <body className={`${geist.variable} ${instrumentSerif.variable} ${geist.className}`} suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -41,13 +57,15 @@ export default function RootLayout({
           <AuthProvider>
             <main className="min-h-screen bg-background text-foreground">
               <Navbar />
-              <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+              <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
                 {children}
               </div>
             </main>
             <Toaster />
+            <InstallPrompt />
           </AuthProvider>
         </GlobalErrorBoundary>
+        <ScriptRegistration />
       </body>
     </html>
   );

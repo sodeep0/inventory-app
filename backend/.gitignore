@@ -1,6 +1,39 @@
-node_modules
-dist
-logs/*.log
-.env
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependency directories
+node_modules/
+
+# Compilation output
+dist/
 *.tsbuildinfo
 
+# Environment Variables
+.env
+.env.*
+
+# Vercel
+.vercel
+.vercel/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+*.swp
+
+# Other
+.agents
+.factory
+documents/
+AGENTS.md

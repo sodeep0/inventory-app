@@ -1,11 +1,34 @@
 import { Router, Response } from 'express';
 import Item from '../models/item';
 import StockMovement from '../models/stockMovement';
+import { sendLowStockAlert } from '../services/emailService';
+import { logger } from '../utils/logger';
 import auth from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import { AuthRequest } from '../types';
 
 const router = Router();
+
+const checkLowStockForSale = async (item: any, previousQuantity: number, userEmail: string | undefined): Promise<void> => {
+  try {
+    const prevWasAboveThreshold = previousQuantity > item.lowStockThreshold;
+    const nowAtOrBelowThreshold = item.quantity <= item.lowStockThreshold;
+    
+    if (prevWasAboveThreshold && nowAtOrBelowThreshold) {
+      if (!userEmail) return;
+
+      await sendLowStockAlert({
+        to: userEmail,
+        itemName: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
+        threshold: item.lowStockThreshold,
+      });
+    }
+  } catch (error) {
+    logger.error(`Error checking low stock alert: ${error}`);
+  }
+};
 
 router.post('/', auth, validate('sale'), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -62,6 +85,11 @@ router.post('/', auth, validate('sale'), async (req: AuthRequest, res: Response)
         quantity: item.quantity,
         movementId: movement._id,
       });
+      
+      // Check for low stock alert after sale
+      // existingItem.quantity is the new quantity after decrement
+      const previousQuantity = existingItem.quantity + item.quantity;
+      await checkLowStockForSale(existingItem, previousQuantity, req.user?.email);
     }
 
     res.status(201).json({ message: 'Sale recorded successfully' });

@@ -43,6 +43,7 @@ export function AdjustStockDialog({
   const [selectedItem, setSelectedItem] = useState("");
   const [quantity, setQuantity] = useState("");
   const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const fetchItems = useCallback(async () => {
@@ -65,7 +66,10 @@ export function AdjustStockDialog({
   }, [isOpen, fetchItems]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       const delta = parseInt(quantity) || 0;
       const itemName = items.find(item => item._id === selectedItem)?.name;
       await axios.post(
@@ -77,14 +81,20 @@ export function AdjustStockDialog({
       );
       onMovementAdded();
       onClose();
-      toast.success("Stock adjusted successfully!", {
+      toast.success("Stock adjusted successfully.", {
         description: `${delta > 0 ? 'Added' : 'Removed'} ${Math.abs(delta)} unit(s)${itemName ? ` ${delta > 0 ? 'to' : 'from'} ${itemName}` : ''}.`,
       });
+      
+      setSelectedItem("");
+      setQuantity("");
+      setReason("");
     } catch (error) {
       console.error("Failed to adjust stock", error);
-      toast.error("Failed to adjust stock", {
+      toast.error("Failed to adjust stock.", {
         description: "Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -92,7 +102,7 @@ export function AdjustStockDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-md" ref={contentRef}>
         <DialogHeader>
-          <DialogTitle>Adjust Stock</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Adjust Stock</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -101,7 +111,7 @@ export function AdjustStockDialog({
               <SelectTrigger>
                 <SelectValue placeholder="Select an item" />
               </SelectTrigger>
-              <SelectContent container={contentRef.current || undefined} className="max-h-60 overflow-y-auto">
+              <SelectContent className="max-h-60 overflow-y-auto">
                 {items
                   .slice()
                   .sort((a, b) => a.name.localeCompare(b.name))
@@ -120,7 +130,7 @@ export function AdjustStockDialog({
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              placeholder="e.g., -5 to remove, 10 to add"
+              placeholder="e.g., -5 or 10"
             />
           </div>
           <div className="space-y-2">
@@ -129,7 +139,7 @@ export function AdjustStockDialog({
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Enter adjustment reason"
+              placeholder="Why is this adjustment needed?"
             />
           </div>
         </div>
@@ -137,8 +147,8 @@ export function AdjustStockDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!selectedItem} className="w-full sm:w-auto">
-            Adjust Stock
+          <Button onClick={handleSubmit} disabled={!selectedItem || isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Adjusting..." : "Adjust Stock"}
           </Button>
         </DialogFooter>
       </DialogContent>

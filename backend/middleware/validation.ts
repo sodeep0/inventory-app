@@ -7,6 +7,8 @@ const schemas: { [key: string]: Joi.ObjectSchema } = {
     name: Joi.string().min(1).max(100).required(),
     quantity: Joi.number().integer().min(0).required(),
     lowStockThreshold: Joi.number().integer().min(0).required(),
+    buyPrice: Joi.number().min(0).default(0).optional(),
+    sellPrice: Joi.number().min(0).default(0).optional(),
     supplierName: Joi.string().max(100).allow('', null).optional(),
   }),
   
@@ -14,6 +16,8 @@ const schemas: { [key: string]: Joi.ObjectSchema } = {
     name: Joi.string().min(1).max(100).required(),
     quantity: Joi.number().integer().min(0).required(),
     lowStockThreshold: Joi.number().integer().min(0).required(),
+    buyPrice: Joi.number().min(0).default(0).optional(),
+    sellPrice: Joi.number().min(0).default(0).optional(),
     supplierName: Joi.string().max(100).allow('', null).optional(),
   }),
   

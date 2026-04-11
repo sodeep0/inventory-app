@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
+import { useState } from "react"
+import axios from "axios"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -12,106 +12,105 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { getErrorMessage } from "@/lib/api";
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Link from "next/link"
+import { getErrorMessage } from "@/lib/api"
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { login } = useAuth();
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [showVerification, setShowVerification] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { login } = useAuth()
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
+    e.preventDefault()
+    setError("")
+    setSuccess("")
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
+      setError("Passwords do not match")
+      return
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
+      setError("Password must be at least 8 characters")
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         username,
         email,
         password,
-      });
-      setSuccess("Verification code sent to your email!");
-      setShowVerification(true);
+      })
+      setSuccess("Verification code sent to your email.")
+      setShowVerification(true)
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
     try {
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
         email,
         code: verificationCode,
-      });
+      })
       
-      // Auto-login after successful verification
       login({ 
         username: res.data.username, 
         email: res.data.email, 
         token: res.data.token 
-      });
-      router.push("/");
+      })
+      router.push("/")
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleResendCode = async () => {
-    setError("");
-    setSuccess("");
-    setIsLoading(true);
+    setError("")
+    setSuccess("")
+    setIsLoading(true)
 
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
         username,
         email,
         password,
-      });
-      setSuccess("New verification code sent!");
+      })
+      setSuccess("New verification code sent!")
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getErrorMessage(err))
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   if (showVerification) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <Card className="w-full max-w-sm">
+      <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+        <Card className="w-full max-w-sm border-border/60">
           <CardHeader>
-            <CardTitle className="text-2xl">Verify Email</CardTitle>
+            <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Verify Email</CardTitle>
             <CardDescription>
               Enter the 6-digit code sent to {email}
             </CardDescription>
@@ -131,8 +130,8 @@ export default function RegisterPage() {
                   className="text-center text-2xl tracking-widest"
                 />
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {success && <p className="text-sm text-green-600">{success}</p>}
+              {error && <p className="text-sm text-pale-red-text">{error}</p>}
+              {success && <p className="text-sm text-pale-green-text">{success}</p>}
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading || verificationCode.length !== 6}>
@@ -159,16 +158,16 @@ export default function RegisterPage() {
           </form>
         </Card>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] px-4">
+      <Card className="w-full max-w-sm border-border/60">
         <CardHeader>
-          <CardTitle className="text-2xl">Register</CardTitle>
+          <CardTitle className="text-xl" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Create Account</CardTitle>
           <CardDescription>
-            Enter your information to create an account.
+            Enter your information to get started.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>
@@ -191,7 +190,7 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="john@example.com"
+                placeholder="you@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -221,16 +220,16 @@ export default function RegisterPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {success && <p className="text-sm text-green-600">{success}</p>}
+            {error && <p className="text-sm text-pale-red-text">{error}</p>}
+            {success && <p className="text-sm text-pale-green-text">{success}</p>}
           </CardContent>
           <CardFooter className="flex flex-col">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create account"}
+              {isLoading ? "Creating account..." : "Create Account"}
             </Button>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="underline">
+              <Link href="/login" className="text-foreground underline underline-offset-4 hover:opacity-70 transition-opacity">
                 Sign in
               </Link>
             </div>
@@ -238,5 +237,5 @@ export default function RegisterPage() {
         </form>
       </Card>
     </div>
-  );
+  )
 }

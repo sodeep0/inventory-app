@@ -20,7 +20,11 @@ interface Item {
   sku: string;
   quantity: number;
   lowStockThreshold: number;
+  buyPrice: number;
+  sellPrice: number;
   supplierName?: string;
+  category?: string;
+  tags?: string[];
 }
 
 interface EditItemDialogProps {
@@ -39,36 +43,50 @@ export function EditItemDialog({
   token,
 }: EditItemDialogProps) {
   const [name, setName] = useState(item.name);
-  const [lowStockThreshold, setLowStockThreshold] = useState(
-    item.lowStockThreshold || 0
-  );
+  const [quantity, setQuantity] = useState(item.quantity);
+  const [lowStockThreshold, setLowStockThreshold] = useState("");
+  const [buyPrice, setBuyPrice] = useState("");
+  const [sellPrice, setSellPrice] = useState("");
   const [supplierName, setSupplierName] = useState(item.supplierName || "");
+  const [category, setCategory] = useState(item.category || "");
+  const [tags, setTags] = useState(item.tags?.join(", ") || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setName(item.name);
-    setLowStockThreshold(item.lowStockThreshold || 0);
+    setQuantity(item.quantity);
+    setLowStockThreshold(item.lowStockThreshold?.toString() || "");
+    setBuyPrice(item.buyPrice?.toString() || "0");
+    setSellPrice(item.sellPrice?.toString() || "0");
     setSupplierName(item.supplierName || "");
+    setCategory(item.category || "");
+    setTags(item.tags?.join(", ") || "");
   }, [item]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
       const res = await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/items/${item._id}`,
-        { name, lowStockThreshold, supplierName },
+        { name, quantity, lowStockThreshold: parseInt(lowStockThreshold) || 0, buyPrice: parseFloat(buyPrice) || 0, sellPrice: parseFloat(sellPrice) || 0, supplierName, category: category || undefined, tags: tags.split(',').map(t => t.trim()).filter(Boolean) },
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       onItemUpdated(res.data);
       onClose();
-      toast.success("Item updated successfully!", {
+      toast.success("Item updated successfully.", {
         description: `${name} has been updated.`,
       });
     } catch (error) {
       console.error("Failed to update item", error);
-      toast.error("Failed to update item", {
+      toast.error("Failed to update item.", {
         description: "Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -76,7 +94,7 @@ export function EditItemDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Item</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Edit Item</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
@@ -90,7 +108,7 @@ export function EditItemDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="quantity">Current Quantity</Label>
-            <div className="px-3 py-2 bg-muted rounded-md text-sm">
+            <div className="px-3 py-2 bg-muted rounded-md text-sm border border-border/60">
               {item.quantity}
             </div>
           </div>
@@ -100,9 +118,31 @@ export function EditItemDialog({
               id="lowStockThreshold"
               type="number"
               value={lowStockThreshold}
-              onChange={(e) => setLowStockThreshold(parseInt(e.target.value) || 0)}
+              onChange={(e) => setLowStockThreshold(e.target.value)}
               placeholder="Enter threshold"
             />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="buyPrice">Buy Price</Label>
+              <Input
+                id="buyPrice"
+                type="number"
+                value={buyPrice}
+                onChange={(e) => setBuyPrice(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sellPrice">Sell Price</Label>
+              <Input
+                id="sellPrice"
+                type="number"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                placeholder="0"
+              />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="supplier">Supplier</Label>
@@ -113,13 +153,31 @@ export function EditItemDialog({
               placeholder="Enter supplier name"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="Enter category"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags</Label>
+            <Input
+              id="tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="Comma-separated tags"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="w-full sm:w-auto">
-            Save Changes
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

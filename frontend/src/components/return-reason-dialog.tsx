@@ -23,19 +23,24 @@ export function ReturnReasonDialog({
   onSubmit: (reason: string) => void;
 }) {
   const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
     onSubmit(reason);
     onClose();
+    setIsSubmitting(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-md">
         <DialogHeader>
-          <DialogTitle>Return Reason</DialogTitle>
+          <DialogTitle style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>Return Reason</DialogTitle>
           <DialogDescription>
-            Please provide a reason for this return.
+            Provide a reason for this return.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -53,8 +58,8 @@ export function ReturnReasonDialog({
           <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button type="submit" onClick={handleSubmit} className="w-full sm:w-auto">
-            Submit
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         </DialogFooter>
       </DialogContent>

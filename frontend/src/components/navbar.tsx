@@ -1,38 +1,37 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { Package2, Menu, X } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useState } from "react";
+import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { PhosphorIcon } from "@/components/icons"
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const handleLogout = () => {
-    logout();
-    router.push("/login");
-    setIsMobileMenuOpen(false);
-  };
+    logout()
+    router.push("/login")
+    setIsMobileMenuOpen(false)
+  }
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+    setIsMobileMenuOpen(!isMobileMenuOpen)
+  }
 
   return (
-    <header className="bg-card shadow-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Package2 className="h-6 w-6 text-primary" />
-          <span className="text-lg">Stock Keeper</span>
+    <header className="border-b border-border/60 bg-background sticky top-0 z-40">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2" style={{ fontFamily: "var(--font-instrument), var(--font-serif)" }}>
+          <PhosphorIcon name="PackageIcon" size={20} />
+          <span className="text-lg tracking-tight">Stock Keeper</span>
         </Link>
         
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-6 text-sm font-medium md:flex">
+        <nav className="hidden items-center gap-8 text-sm md:flex">
           {user && (
             <>
               <Link
@@ -47,70 +46,88 @@ export default function Navbar() {
               >
                 Movements
               </Link>
+              <Link
+                href="/reports"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Reports
+              </Link>
+              <Link
+                href="/profile"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Profile
+              </Link>
             </>
           )}
         </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden items-center gap-2 sm:gap-4 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <ThemeToggle />
           {user ? (
-            <Button variant="outline" onClick={handleLogout}>
+            <Button variant="outline" onClick={handleLogout} size="sm">
               Logout
             </Button>
           ) : (
             <>
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild size="sm">
                 <Link href="/login">Login</Link>
               </Button>
-              <Button asChild>
-                <Link href="/register">Register</Link>
+              <Button asChild size="sm">
+                <Link href="/register">Sign Up</Link>
               </Button>
             </>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={toggleMobileMenu}
-            className="p-2"
           >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            <PhosphorIcon name={isMobileMenuOpen ? "X" : "List"} size={20} />
           </Button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="border-t bg-card md:hidden">
-          <div className="container mx-auto px-4 py-4 space-y-4">
+        <div className="border-t border-border/60 md:hidden">
+          <div className="mx-auto px-4 py-4 space-y-3 max-w-6xl">
             {user && (
-              <nav className="space-y-2">
+              <nav className="space-y-1">
                 <Link
                   href="/inventory"
-                  className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
+                  className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Inventory
                 </Link>
                 <Link
                   href="/movements"
-                  className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md"
+                  className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Movements
                 </Link>
+                <Link
+                  href="/reports"
+                  className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Reports
+                </Link>
+                <Link
+                  href="/profile"
+                  className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Profile
+                </Link>
               </nav>
             )}
-            <div className="pt-4 border-t">
+            <div className="pt-3 border-t border-border/60">
               {user ? (
                 <Button variant="outline" onClick={handleLogout} className="w-full">
                   Logout
@@ -124,7 +141,7 @@ export default function Navbar() {
                   </Button>
                   <Button asChild className="w-full">
                     <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                      Register
+                      Sign Up
                     </Link>
                   </Button>
                 </div>
@@ -134,5 +151,5 @@ export default function Navbar() {
         </div>
       )}
     </header>
-  );
+  )
 }

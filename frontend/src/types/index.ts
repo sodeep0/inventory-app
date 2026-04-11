@@ -8,6 +8,10 @@ export interface Item {
   sku: string;
   quantity: number;
   lowStockThreshold: number;
+  buyPrice: number;
+  sellPrice: number;
+  category?: string;
+  tags?: string[];
   status: 'active' | 'archived';
   createdAt: string;
   updatedAt: string;
