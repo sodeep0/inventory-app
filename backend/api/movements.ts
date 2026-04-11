@@ -9,16 +9,19 @@ const router = Router();
 router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '10', 10);
+    const limit = Math.min(parseInt((req.query.limit as string) || '10', 10), 100); // Cap at 100 items per page
     const skip = (page - 1) * limit;
 
-    const movements = await StockMovement.find({ userId: req.user!._id })
-      .populate('itemId', 'name sku')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-      
-    const total = await StockMovement.countDocuments({ userId: req.user!._id });
+    // Use Promise.all for parallel execution and lean() for better performance
+    const [movements, total] = await Promise.all([
+      StockMovement.find({ userId: req.user!._id })
+        .populate('itemId', 'name sku')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      StockMovement.countDocuments({ userId: req.user!._id }),
+    ]);
 
     res.json({ movements, total });
   } catch (error) {
