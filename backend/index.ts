@@ -94,6 +94,15 @@ app.use('/api/', apiLimiter);
 // Apply database connection check to all API routes
 app.use('/api/', checkDBConnection);
 
+// API root endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Inventory App API root',
+    endpoints: ['/api/items', '/api/sales', '/api/returns', '/api/auth', '/api/movements', '/api/stats', '/api/reports', '/api/export']
+  });
+});
+
 // Load route handlers
 import itemsRouter from './api/items';
 import salesRouter from './api/sales';

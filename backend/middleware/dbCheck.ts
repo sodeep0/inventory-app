@@ -1,16 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import connectDB from '../db/mongoose';
 
-export const checkDBConnection = (req: Request, res: Response, next: NextFunction): void => {
-  if (mongoose.connection.readyState !== 1) {
+export const checkDBConnection = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // If we're not connected, ensure the connection process finishes
+    // Mongoose readyState 1 means 'connected'
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (error) {
     res.status(503).json({ 
-      message: 'Database connection not ready. Please try again in a moment.',
+      message: 'Database connection failed. Please try again in a moment.',
       status: 'database_error',
-      retryAfter: 2 // Suggest retry after 2 seconds
+      retryAfter: 2
     });
-    return;
   }
-  next();
 };
 
 // Optional: Add retry logic for database operations
