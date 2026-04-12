@@ -20,6 +20,7 @@ const connectDB = async (): Promise<void> => {
         bufferCommands: false, // Disable mongoose buffering
         serverSelectionTimeoutMS: 10000, // Increase timeout for cold starts
         socketTimeoutMS: 45000,
+        family: 4, // Force IPv4 (Fixes Vercel DNS resolution issues with Atlas)
         maxPoolSize: 10, // Maintain up to 10 socket connections
         minPoolSize: 1, // Maintain at least 1 socket connection
         maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
