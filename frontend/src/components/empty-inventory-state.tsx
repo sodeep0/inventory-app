@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PhosphorIcon } from "@/components/icons";
 
 interface EmptyInventoryStateProps {
-  onAddItem: () => void;
   onImportCsv: () => void;
 }
 
-export function EmptyInventoryState({ onAddItem, onImportCsv }: EmptyInventoryStateProps) {
+export function EmptyInventoryState({ onImportCsv }: EmptyInventoryStateProps) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 bg-muted/30 px-6 py-16 text-center">
       <PhosphorIcon name="Package" size={48} className="text-muted-foreground mb-4" />
@@ -17,8 +17,10 @@ export function EmptyInventoryState({ onAddItem, onImportCsv }: EmptyInventorySt
         Add your first product or import a CSV to start tracking stock levels and movements.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
-        <Button onClick={onAddItem} className="w-full">
-          <PhosphorIcon name="Plus" size={16} /> Add Item
+        <Button asChild className="w-full">
+          <Link href="/inventory/new">
+            <PhosphorIcon name="Plus" size={16} /> Add item
+          </Link>
         </Button>
         <Button variant="outline" onClick={onImportCsv} className="w-full">
           <PhosphorIcon name="DownloadSimple" size={16} /> Import CSV

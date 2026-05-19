@@ -13,8 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PhosphorIcon } from "@/components/icons";
-import { AddItemDialog } from "@/components/add-item-dialog";
-import { EditItemDialog } from "@/components/edit-item-dialog";
+import Link from "next/link";
 import { DeleteItemDialog } from "@/components/delete-item-dialog";
 import { ImportCsvDialog } from "@/components/import-csv-dialog";
 import { EmptyInventoryState } from "@/components/empty-inventory-state";
@@ -212,8 +211,6 @@ function InventoryPage({ token }: { token?: string }) {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
-  const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [isDeleteItemDialogOpen, setIsDeleteItemDialogOpen] = useState(false);
   const [isImportCsvDialogOpen, setIsImportCsvDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -304,19 +301,16 @@ function InventoryPage({ token }: { token?: string }) {
     router.push(`/items/${itemId}`);
   }, [router]);
 
-  const handleOpenEditDialog = useCallback((item: Item) => {
-    setSelectedItem(item);
-    setIsEditItemDialogOpen(true);
-  }, []);
+  const handleOpenEdit = useCallback(
+    (item: Item) => {
+      router.push(`/inventory/${item._id}/edit`);
+    },
+    [router]
+  );
 
   const handleOpenDeleteDialog = useCallback((item: Item) => {
     setSelectedItem(item);
     setIsDeleteItemDialogOpen(true);
-  }, []);
-
-  const handleCloseEditDialog = useCallback(() => {
-    setIsEditItemDialogOpen(false);
-    setSelectedItem(null);
   }, []);
 
   const handleCloseDeleteDialog = useCallback(() => {
@@ -348,11 +342,6 @@ function InventoryPage({ token }: { token?: string }) {
     downloadCsvExport("/export/items", "items.csv");
   }, []);
 
-  const handleItemAdded = useCallback(() => {
-    markOnboardingComplete();
-    handleRefresh();
-  }, [handleRefresh]);
-
   const handleSort = useCallback((field: string) => {
     if (sortField === field) {
       setSortDir(prev => prev === "asc" ? "desc" : "asc");
@@ -370,11 +359,10 @@ function InventoryPage({ token }: { token?: string }) {
           <h1 className="text-3xl tracking-tight" style={{ fontFamily: "var(--font-instrument), var(--font-serif)", letterSpacing: "-0.02em" }}>
             Inventory
           </h1>
-          <Button
-            onClick={() => setIsAddItemDialogOpen(true)}
-            className="sm:w-auto"
-          >
-            <PhosphorIcon name="Plus" size={16} /> Add Item
+          <Button asChild className="sm:w-auto">
+            <Link href="/inventory/new">
+              <PhosphorIcon name="Plus" size={16} /> Add item
+            </Link>
           </Button>
         </div>
 
@@ -445,7 +433,6 @@ function InventoryPage({ token }: { token?: string }) {
           <p className="text-sm text-muted-foreground text-center py-12">Loading inventory...</p>
         ) : total === 0 && !isLoading ? (
           <EmptyInventoryState
-            onAddItem={() => setIsAddItemDialogOpen(true)}
             onImportCsv={() => setIsImportCsvDialogOpen(true)}
           />
         ) : (
@@ -493,7 +480,7 @@ function InventoryPage({ token }: { token?: string }) {
                   key={item._id}
                   item={item}
                   onNameClick={handleNameClick}
-                  onEdit={handleOpenEditDialog}
+                  onEdit={handleOpenEdit}
                   onDelete={handleOpenDeleteDialog}
                 />
               ))}
@@ -508,7 +495,7 @@ function InventoryPage({ token }: { token?: string }) {
               key={item._id}
               item={item}
               onNameClick={handleNameClick}
-              onEdit={handleOpenEditDialog}
+              onEdit={handleOpenEdit}
               onDelete={handleOpenDeleteDialog}
             />
           ))}
@@ -532,13 +519,6 @@ function InventoryPage({ token }: { token?: string }) {
         </>
         )}
 
-        {/* Dialogs */}
-        <AddItemDialog
-          isOpen={isAddItemDialogOpen}
-          onClose={() => setIsAddItemDialogOpen(false)}
-          onItemAdded={handleItemAdded}
-          token={token}
-        />
         <ImportCsvDialog
           isOpen={isImportCsvDialogOpen}
           onClose={() => setIsImportCsvDialogOpen(false)}
@@ -548,22 +528,13 @@ function InventoryPage({ token }: { token?: string }) {
           }}
         />
         {selectedItem && (
-          <>
-            <EditItemDialog
-              isOpen={isEditItemDialogOpen}
-              onClose={handleCloseEditDialog}
-              item={selectedItem}
-              onItemUpdated={handleRefresh}
-              token={token}
-            />
-            <DeleteItemDialog
-              isOpen={isDeleteItemDialogOpen}
-              onClose={handleCloseDeleteDialog}
-              item={selectedItem}
-              onItemDeleted={handleRefresh}
-              token={token}
-            />
-          </>
+          <DeleteItemDialog
+            isOpen={isDeleteItemDialogOpen}
+            onClose={handleCloseDeleteDialog}
+            item={selectedItem}
+            onItemDeleted={handleRefresh}
+            token={token}
+          />
         )}
       </div>
     </ErrorBoundary>
