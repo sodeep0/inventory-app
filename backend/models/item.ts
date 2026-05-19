@@ -9,7 +9,6 @@ const itemSchema = new Schema<IItemDocument>({
   sku: {
     type: String,
     required: true,
-    unique: true,
   },
   quantity: {
     type: Number,
@@ -54,7 +53,7 @@ const itemSchema = new Schema<IItemDocument>({
 
 // Indexes for optimized queries
 itemSchema.index({ userId: 1, name: 1 }); // For filtering by user and searching by name
-itemSchema.index({ userId: 1, sku: 1 }); // For filtering by user and searching by SKU
+itemSchema.index({ userId: 1, sku: 1 }, { unique: true }); // SKU unique per user
 itemSchema.index({ userId: 1, quantity: 1 }); // For sorting by quantity per user
 itemSchema.index({ userId: 1, createdAt: -1 }); // For sorting by creation date per user
 itemSchema.index({ userId: 1, status: 1 }); // For filtering by status per user

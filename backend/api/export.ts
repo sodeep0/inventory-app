@@ -1,39 +1,12 @@
 import { Router, Response } from 'express';
 import Item from '../models/item';
 import StockMovement from '../models/stockMovement';
-import jwt from 'jsonwebtoken';
+import auth from '../middleware/auth';
 import { AuthRequest } from '../types';
 
 const router = Router();
 
-// Authenticate from query token (for direct browser downloads)
-const authenticateExport = async (req: AuthRequest, res: Response, next: () => void) => {
-  const authHeader = req.headers.authorization;
-  const tokenQueryParam = req.query.token as string;
-  const token = authHeader?.split(' ')[1] || tokenQueryParam;
-
-  if (!token) {
-    res.status(401).json({ message: 'Authentication required' });
-    return;
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
-    const User = (await import('../models/user')).default;
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      res.status(401).json({ message: 'User not found' });
-      return;
-    }
-    req.user = user as any;
-    next();
-  } catch {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
-// Escape CSV field
-const escapeCsvField = (value: any): string => {
+const escapeCsvField = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   const str = String(value);
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -42,8 +15,7 @@ const escapeCsvField = (value: any): string => {
   return str;
 };
 
-// Export items as CSV
-router.get('/items', authenticateExport, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/items', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const items = await Item.find({ userId: req.user!._id }).sort({ createdAt: -1 });
 
@@ -59,7 +31,7 @@ router.get('/items', authenticateExport, async (req: AuthRequest, res: Response)
           const dateVal = item[h as keyof typeof item];
           return escapeCsvField(dateVal instanceof Date ? dateVal.toISOString() : '');
         }
-        return escapeCsvField((item as any)[h]);
+        return escapeCsvField((item as unknown as Record<string, unknown>)[h]);
       });
       return fields.join(',');
     });
@@ -75,8 +47,7 @@ router.get('/items', authenticateExport, async (req: AuthRequest, res: Response)
   }
 });
 
-// Export movements as CSV
-router.get('/movements', authenticateExport, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/movements', auth, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const movements = await StockMovement.find({ userId: req.user!._id })
       .populate('itemId', 'name sku')
@@ -87,12 +58,12 @@ router.get('/movements', authenticateExport, async (req: AuthRequest, res: Respo
     const headerRow = headers.join(',');
 
     const rows = movements.map(mov => {
-      const item = mov.itemId as any;
+      const item = mov.itemId as { name?: string; sku?: string } | null;
       const fields = headers.map(h => {
         if (h === 'itemName') return escapeCsvField(item?.name || '—');
         if (h === 'sku') return escapeCsvField(item?.sku || '—');
-        if (h === 'createdAt') return escapeCsvField(mov.createdAt ? new Date(mov.createdAt as any).toISOString() : '');
-        return escapeCsvField((mov as any)[h]);
+        if (h === 'createdAt') return escapeCsvField(mov.createdAt ? new Date(mov.createdAt as Date).toISOString() : '');
+        return escapeCsvField((mov as Record<string, unknown>)[h]);
       });
       return fields.join(',');
     });

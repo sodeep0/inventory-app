@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import mongoose from 'mongoose';
 import Item from '../models/item';
 import StockMovement from '../models/stockMovement';
 import { generateUniqueSku } from '../services/skuService';
@@ -18,6 +19,7 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
     const search = (req.query.search as string) || '';
     const sort = (req.query.sort as string) || 'quantity';
     const category = (req.query.category as string) || '';
+    const lowStock = req.query.lowStock === 'true';
 
     const query: any = {
       userId: req.user!._id,
@@ -28,6 +30,9 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
         ],
       }),
       ...(category && { category: category.toLowerCase() }),
+      ...(lowStock && {
+        $expr: { $lte: ['$quantity', '$lowStockThreshold'] },
+      }),
     };
 
     const sortOptions: any = {};
@@ -67,7 +72,7 @@ router.post('/', auth, validate('item'), async (req: AuthRequest, res: Response)
       return;
     }
 
-    const sku = await generateUniqueSku(name);
+    const sku = await generateUniqueSku(name, req.user!._id as mongoose.Types.ObjectId);
 
     const newItem = new Item({
       ...req.body,
@@ -295,7 +300,7 @@ router.post('/import', auth, async (req: AuthRequest, res: Response): Promise<vo
         // Determine SKU
         let sku = itemData.sku;
         if (!sku) {
-          sku = await generateUniqueSku(itemData.name);
+          sku = await generateUniqueSku(itemData.name, req.user!._id as mongoose.Types.ObjectId);
         }
         
         // Check if SKU already exists for this user

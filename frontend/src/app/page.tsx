@@ -6,6 +6,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PhosphorIcon } from "@/components/icons"
+import { OnboardingChecklist } from "@/components/onboarding-checklist"
+
+interface LowStockItem {
+  _id: string
+  name: string
+  sku: string
+  quantity: number
+  lowStockThreshold: number
+}
 
 interface DashboardStats {
   totalItems: number
@@ -14,6 +23,7 @@ interface DashboardStats {
   totalMovements: number
   recentMovements: any[]
   topItems: { name: string; quantity: number; sku: string }[]
+  lowStockList?: LowStockItem[]
 }
 
 export default function Home() {
@@ -59,6 +69,39 @@ export default function Home() {
 
       {user ? (
         <div className="space-y-8 w-full max-w-4xl mx-auto">
+          {stats && !loading && (
+            <OnboardingChecklist totalItems={stats.totalItems} />
+          )}
+
+          {/* Low stock alert banner */}
+          {stats && !loading && stats.lowStockList && stats.lowStockList.length > 0 && (
+            <Card className="border border-pale-red-text/30 bg-pale-red-bg/40 p-4">
+              <CardHeader className="p-0 mb-3">
+                <div className="flex items-center gap-2">
+                  <PhosphorIcon name="WarningCircle" size={20} className="text-pale-red-text" />
+                  <CardTitle className="text-base text-pale-red-text">
+                    {stats.lowStockItems} item{stats.lowStockItems !== 1 ? "s" : ""} need restocking
+                  </CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 space-y-2">
+                <ul className="text-sm space-y-1">
+                  {stats.lowStockList.map((item) => (
+                    <li key={item._id} className="flex justify-between gap-4">
+                      <span className="font-medium truncate">{item.name}</span>
+                      <span className="text-muted-foreground shrink-0">
+                        {item.quantity} / {item.lowStockThreshold}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Button asChild variant="outline" size="sm" className="mt-2">
+                  <Link href="/inventory?lowStock=true">View low stock</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Stats Summary Cards */}
           {stats && !loading && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

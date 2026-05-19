@@ -20,6 +20,7 @@ import { PhosphorIcon } from "@/components/icons";
 import { formatNepaliDateTime } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleAuthError } from "@/lib/auth";
+import { downloadCsvExport } from "@/lib/export";
 import { StockMovement } from "@/types";
 
 const movementTypeStyle = {
@@ -108,7 +109,7 @@ function MovementsPage({ token }: { token?: string }) {
     }, 300);
     
     return () => clearTimeout(timeoutId);
-  }, [search, typeFilter, token]);
+  }, [search, typeFilter, sortField, sortDir, token]);
 
   const handleMovementAdded = () => {
     fetchMovements(1);
@@ -144,12 +145,7 @@ function MovementsPage({ token }: { token?: string }) {
         </div>
         <Button
           variant="outline"
-          onClick={() => {
-            const userJSON = localStorage.getItem("user");
-            if (!userJSON) return;
-            const userData = JSON.parse(userJSON);
-            window.open(`${process.env.NEXT_PUBLIC_API_URL}/export/movements?token=${userData.token}`, "_blank");
-          }}
+          onClick={() => downloadCsvExport("/export/movements", "movements.csv")}
         >
           <PhosphorIcon name="DownloadSimple" size={16} /> Export
         </Button>

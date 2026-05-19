@@ -1,0 +1,9 @@
+{
+  "name": "stock-keeper",
+  "private": true,
+  "scripts": {
+    "test:api": "cd backend && npm run test:api",
+    "test:e2e": "cd e2e && npm test",
+    "test": "npm run test:api && npm run test:e2e"
+  }
+}

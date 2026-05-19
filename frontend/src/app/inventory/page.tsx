@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -17,6 +17,9 @@ import { AddItemDialog } from "@/components/add-item-dialog";
 import { EditItemDialog } from "@/components/edit-item-dialog";
 import { DeleteItemDialog } from "@/components/delete-item-dialog";
 import { ImportCsvDialog } from "@/components/import-csv-dialog";
+import { EmptyInventoryState } from "@/components/empty-inventory-state";
+import { markOnboardingComplete } from "@/components/onboarding-checklist";
+import { downloadCsvExport } from "@/lib/export";
 import withAuth from "@/components/withAuth";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiClient, getErrorMessage } from "@/lib/api";
@@ -223,17 +226,23 @@ function InventoryPage({ token }: { token?: string }) {
   const [error, setError] = useState<string | null>(null);
   
   const isLoadingRef = useRef(false);
-  const [, setLoadingState] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const router = useRouter();
   const { logout } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("lowStock") === "true") {
+      setLowOnly(true);
+    }
+  }, []);
 
   const fetchItems = useCallback(async (requestedPage = 1) => {
     if (!token || isLoadingRef.current) return;
     
     try {
       isLoadingRef.current = true;
-      setLoadingState(true);
+      setIsLoading(true);
       setError(null);
       
       const params = new URLSearchParams();
@@ -241,6 +250,7 @@ function InventoryPage({ token }: { token?: string }) {
       params.set("limit", String(pageSize));
       if (search.trim()) params.set("search", search.trim());
       if (categoryFilter) params.set("category", categoryFilter);
+      if (lowOnly) params.set("lowStock", "true");
       const sortParam = sortDir === "desc" ? `-${sortField}` : sortField;
       params.set("sort", sortParam);
       
@@ -263,9 +273,9 @@ function InventoryPage({ token }: { token?: string }) {
       }
     } finally {
       isLoadingRef.current = false;
-      setLoadingState(false);
+      setIsLoading(false);
     }
-  }, [token, pageSize, search, sortField, sortDir, categoryFilter, logout]);
+  }, [token, pageSize, search, sortField, sortDir, categoryFilter, lowOnly, logout]);
 
   useEffect(() => {
     if (token) {
@@ -283,10 +293,12 @@ function InventoryPage({ token }: { token?: string }) {
     return () => clearTimeout(timeoutId);
   }, [search, token]);
 
-  const displayedItems = useMemo(() => {
-    if (!lowOnly) return items;
-    return items.filter(item => item.quantity <= item.lowStockThreshold);
-  }, [items, lowOnly]);
+  useEffect(() => {
+    if (!token) return;
+    fetchItems(1);
+  }, [categoryFilter, sortField, sortDir, lowOnly, token]);
+
+  const displayedItems = items;
 
   const handleNameClick = useCallback((itemId: string) => {
     router.push(`/items/${itemId}`);
@@ -333,12 +345,13 @@ function InventoryPage({ token }: { token?: string }) {
 
   // Export handlers
   const handleExportItems = useCallback(() => {
-    const userJSON = localStorage.getItem("user");
-    if (!userJSON) return;
-    const userData = JSON.parse(userJSON);
-    const token = userData.token;
-    window.open(`${process.env.NEXT_PUBLIC_API_URL}/export/items?token=${token}`, "_blank");
+    downloadCsvExport("/export/items", "items.csv");
   }, []);
+
+  const handleItemAdded = useCallback(() => {
+    markOnboardingComplete();
+    handleRefresh();
+  }, [handleRefresh]);
 
   const handleSort = useCallback((field: string) => {
     if (sortField === field) {
@@ -428,6 +441,15 @@ function InventoryPage({ token }: { token?: string }) {
           </Button>
         </div>
 
+        {isLoading && items.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-12">Loading inventory...</p>
+        ) : total === 0 && !isLoading ? (
+          <EmptyInventoryState
+            onAddItem={() => setIsAddItemDialogOpen(true)}
+            onImportCsv={() => setIsImportCsvDialogOpen(true)}
+          />
+        ) : (
+        <>
         {/* Desktop Table View */}
         <div className="hidden md:block rounded-lg border border-border/60">
           <Table>
@@ -497,28 +519,33 @@ function InventoryPage({ token }: { token?: string }) {
           <Button
             variant="outline"
             onClick={handleLoadMore}
-            disabled={isLoadingRef.current || items.length >= total}
+            disabled={isLoading || items.length >= total}
             className="w-full sm:w-auto"
           >
             {items.length >= total
               ? "All items loaded"
-              : isLoadingRef.current
+              : isLoading
               ? "Loading..."
               : "Load more"}
           </Button>
         </div>
+        </>
+        )}
 
         {/* Dialogs */}
         <AddItemDialog
           isOpen={isAddItemDialogOpen}
           onClose={() => setIsAddItemDialogOpen(false)}
-          onItemAdded={handleRefresh}
+          onItemAdded={handleItemAdded}
           token={token}
         />
         <ImportCsvDialog
           isOpen={isImportCsvDialogOpen}
           onClose={() => setIsImportCsvDialogOpen(false)}
-          onImportComplete={handleRefresh}
+          onImportComplete={() => {
+            markOnboardingComplete();
+            handleRefresh();
+          }}
         />
         {selectedItem && (
           <>

@@ -4,7 +4,10 @@
     "dev": "nodemon --exec ts-node index.ts",
     "build": "tsc",
     "start:ts": "ts-node index.ts",
-    "clear-db": "ts-node scripts/clearCollections.ts"
+    "clear-db": "ts-node scripts/clearCollections.ts",
+    "migrate:sku-per-user": "ts-node scripts/migrateSkuPerUser.ts",
+    "test:api": "ts-node scripts/smoke-api.ts",
+    "seed:e2e": "ts-node scripts/seed-e2e-user.ts"
   },
   "keywords": [],
   "author": "",

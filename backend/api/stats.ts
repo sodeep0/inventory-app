@@ -41,6 +41,15 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
       .limit(5)
       .select('name quantity sku');
 
+    // Low-stock items for dashboard banner (up to 5, lowest quantity first)
+    const lowStockList = await Item.find({
+      userId,
+      $expr: { $lte: ['$quantity', '$lowStockThreshold'] },
+    })
+      .sort({ quantity: 1 })
+      .limit(5)
+      .select('name sku quantity lowStockThreshold');
+
     res.json({
       totalItems,
       totalQuantity,
@@ -48,6 +57,7 @@ router.get('/', auth, async (req: AuthRequest, res: Response): Promise<void> => 
       totalMovements,
       recentMovements,
       topItems,
+      lowStockList,
     });
   } catch (error) {
     console.error(error);

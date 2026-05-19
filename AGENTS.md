@@ -81,6 +81,21 @@ cd frontend && npm run lint    # ESLint
 - **Backend:** Requires `.env` (MongoDB URI, JWT secret, email config). See `.env.example`
 - **Frontend:** Backend API URL in `.env.local`
 
+## Documentation
+
+- [Product spec](docs/product.md)
+- [Architecture](docs/architecture.md)
+- [API reference](docs/API.md)
+- [Roadmap](docs/ROADMAP.md)
+
+## Database migrations
+
+After deploying SKU model changes, run:
+
+```bash
+cd backend && npm run migrate:sku-per-user
+```
+
 ## Conventions
 
 - Use TypeScript throughout both frontend and backend
