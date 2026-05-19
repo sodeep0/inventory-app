@@ -1,9 +1,30 @@
-const CACHE_NAME = 'stock-keeper-v1';
+const CACHE_NAME = 'stock-keeper-v2';
 const APP_SHELL = [
   '/',
   '/inventory',
   '/movements',
 ];
+
+function isHttpRequest(request) {
+  try {
+    const { protocol } = new URL(request.url);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function cacheResponse(request, response) {
+  if (!isHttpRequest(request)) return;
+  if (!response || response.status !== 200 || response.type !== 'basic') return;
+
+  const responseToCache = response.clone();
+  caches.open(CACHE_NAME).then((cache) => {
+    return cache.put(request, responseToCache);
+  }).catch(() => {
+    // Ignore cache failures (e.g. opaque or unsupported requests)
+  });
+}
 
 // Install event - cache app shell
 self.addEventListener('install', (event) => {
@@ -34,6 +55,12 @@ self.addEventListener('activate', (event) => {
 // Fetch event - cache-first for static assets, network for API calls
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+
+  // Only handle same-origin http(s) — skip chrome-extension, etc.
+  if (!isHttpRequest(request)) {
+    return;
+  }
+
   const url = new URL(request.url);
 
   // Skip API calls - always go to network
@@ -61,14 +88,7 @@ self.addEventListener('fetch', (event) => {
           return cachedResponse;
         }
         return fetch(request).then((response) => {
-          // Only cache successful responses
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
+          cacheResponse(request, response);
           return response;
         });
       }).catch(() => {

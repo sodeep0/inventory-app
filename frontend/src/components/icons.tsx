@@ -62,7 +62,7 @@ const iconMap = {
   ShoppingCart,
 }
 
-type IconName = keyof typeof iconMap
+export type IconName = keyof typeof iconMap
 
 interface PhosphorIconProps {
   name: IconName

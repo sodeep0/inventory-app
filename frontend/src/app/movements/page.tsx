@@ -11,12 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { RecordSaleDialog } from "@/components/record-sale-dialog";
-import { AddStockDialog } from "@/components/add-stock-dialog";
-import { RecordReturnDialog } from "@/components/record-return-dialog";
-import { AdjustStockDialog } from "@/components/adjust-stock-dialog";
 import withAuth from "@/components/withAuth";
 import { PhosphorIcon } from "@/components/icons";
+import { MovementActionCards } from "@/components/movements/movement-action-cards";
 import { formatNepaliDateTime } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { handleAuthError } from "@/lib/auth";
@@ -45,11 +42,6 @@ function MovementsPage({ token }: { token?: string }) {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
-  const [isRecordSaleDialogOpen, setIsRecordSaleDialogOpen] = useState(false);
-  const [isAddStockDialogOpen, setIsAddStockDialogOpen] = useState(false);
-  const [isRecordReturnDialogOpen, setIsRecordReturnDialogOpen] =
-    useState(false);
-  const [isAdjustStockDialogOpen, setIsAdjustStockDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sortField, setSortField] = useState("createdAt");
@@ -111,10 +103,6 @@ function MovementsPage({ token }: { token?: string }) {
     return () => clearTimeout(timeoutId);
   }, [search, typeFilter, sortField, sortDir, token]);
 
-  const handleMovementAdded = () => {
-    fetchMovements(1);
-  };
-
   const handleLoadMore = () => {
     const nextPage = page + 1;
     if (movements.length < total && !isLoading) {
@@ -151,33 +139,12 @@ function MovementsPage({ token }: { token?: string }) {
         </Button>
       </div>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Button
-          onClick={() => setIsRecordSaleDialogOpen(true)}
-          variant="outline"
-        >
-          <PhosphorIcon name="Minus" size={16} /> Sale
-        </Button>
-        <Button
-          onClick={() => setIsAddStockDialogOpen(true)}
-          variant="outline"
-        >
-          <PhosphorIcon name="Plus" size={16} /> Add Stock
-        </Button>
-        <Button
-          onClick={() => setIsRecordReturnDialogOpen(true)}
-          variant="outline"
-        >
-          <PhosphorIcon name="ArrowCounterClockwise" size={16} /> Return
-        </Button>
-        <Button
-          onClick={() => setIsAdjustStockDialogOpen(true)}
-          variant="outline"
-        >
-          <PhosphorIcon name="SlidersHorizontal" size={16} /> Adjust
-        </Button>
-      </div>
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          Record a movement
+        </h2>
+        <MovementActionCards />
+      </section>
 
       {/* Search and Filter Controls */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -348,30 +315,6 @@ function MovementsPage({ token }: { token?: string }) {
         </Button>
       </div>
 
-      <RecordSaleDialog
-        isOpen={isRecordSaleDialogOpen}
-        onClose={() => setIsRecordSaleDialogOpen(false)}
-        onMovementAdded={handleMovementAdded}
-        token={token}
-      />
-      <AddStockDialog
-        isOpen={isAddStockDialogOpen}
-        onClose={() => setIsAddStockDialogOpen(false)}
-        onMovementAdded={handleMovementAdded}
-        token={token}
-      />
-      <RecordReturnDialog
-        isOpen={isRecordReturnDialogOpen}
-        onClose={() => setIsRecordReturnDialogOpen(false)}
-        onMovementAdded={handleMovementAdded}
-        token={token}
-      />
-      <AdjustStockDialog
-        isOpen={isAdjustStockDialogOpen}
-        onClose={() => setIsAdjustStockDialogOpen(false)}
-        onMovementAdded={handleMovementAdded}
-        token={token}
-      />
     </div>
   );
 }
