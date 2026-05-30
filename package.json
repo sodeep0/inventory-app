@@ -2,8 +2,14 @@
   "name": "stock-keeper",
   "private": true,
   "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
     "test:api": "cd backend && npm run test:api",
     "test:e2e": "cd e2e && npm test",
     "test": "npm run test:api && npm run test:e2e"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
